@@ -565,3 +565,100 @@ tbody tr.selected-day-row td:first-child {
   .detail-summary { grid-template-columns: 1fr 1fr; }
   .year-calendar { grid-template-columns: 1fr; }
 }
+
+
+/* v1.2.1 compact header */
+.brand,
+.brand-logo-box,
+.brand-logo,
+.brand-title,
+.pin-logo-wrap,
+.pin-logo {
+  display: none !important;
+}
+
+.topbar {
+  min-height: 54px !important;
+  height: auto !important;
+  padding: 7px 20px !important;
+  box-shadow: none !important;
+}
+
+.brand-simple {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+
+.brand-simple span {
+  color: var(--red);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 1.35px;
+  white-space: nowrap;
+}
+
+.brand-simple strong {
+  color: var(--brown);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -.4px;
+  white-space: nowrap;
+}
+
+.top-actions {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.status-badge {
+  padding: 5px 8px !important;
+  font-size: 10px !important;
+}
+
+.top-btn {
+  min-height: 30px !important;
+  padding: 0 9px !important;
+  font-size: 10px !important;
+}
+
+.pin-card {
+  width: min(390px, 100%) !important;
+  padding: 24px 26px 26px !important;
+}
+
+.pin-label {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    min-height: 48px !important;
+    padding: 6px 10px !important;
+  }
+
+  .brand-simple {
+    gap: 6px;
+  }
+
+  .brand-simple span {
+    font-size: 8px;
+  }
+
+  .brand-simple strong {
+    font-size: 14px;
+  }
+
+  .status-badge {
+    padding: 4px 6px !important;
+    font-size: 9px !important;
+  }
+
+  .top-btn {
+    min-height: 27px !important;
+    padding: 0 7px !important;
+    font-size: 9px !important;
+  }
+}
