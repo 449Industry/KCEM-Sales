@@ -62,6 +62,8 @@
           <strong id="quickTotal">0원</strong>
         </div>
       </div>
+
+      <button id="printBtn" class="print-btn" type="button">인쇄</button>
     </section>
 
     <section id="detailSummary" class="day-summary-block">
@@ -95,6 +97,34 @@
           <strong id="sumTotalDetail">0원</strong>
         </article>
       </div>
+    </section>
+
+    <section id="dayItemsPanel" class="panel item-summary-panel">
+      <div class="panel-head compact">
+        <div>
+          <span class="section-kicker">SOLD ITEMS</span>
+          <h2 id="dayItemsTitle">선택일 판매 품목</h2>
+          <p>해당 날짜에 실제로 기록된 판매 건을 결제수단까지 그대로 보여줍니다.</p>
+        </div>
+        <span id="dayItemsCount" class="count">0건</span>
+      </div>
+
+      <div class="table-scroll">
+        <table class="excel-table day-item-table">
+          <thead>
+            <tr>
+              <th>시간</th>
+              <th>판매 품목</th>
+              <th>결제수단</th>
+              <th class="center">수량</th>
+              <th class="right">금액</th>
+              <th>비고</th>
+            </tr>
+          </thead>
+          <tbody id="dayItemsRows"></tbody>
+        </table>
+      </div>
+      <div id="dayItemsEmpty" class="empty hidden">선택한 날짜의 판매 품목이 없습니다.</div>
     </section>
 
     <section id="detailPanel" class="panel">
@@ -143,6 +173,33 @@
       </div>
     </section>
 
+    <section id="monthItemsPanel" class="panel item-summary-panel hidden">
+      <div class="panel-head compact">
+        <div>
+          <span class="section-kicker">MONTHLY ITEMS</span>
+          <h2 id="monthItemsTitle">월간 품목별 집계</h2>
+          <p>같은 품목은 한 줄로 합치고 수량을 누적합니다. 현금계는 현금 + 계좌 + 시루입니다.</p>
+        </div>
+        <span id="monthItemsCount" class="count">0품목</span>
+      </div>
+
+      <div class="table-scroll">
+        <table class="excel-table">
+          <thead>
+            <tr>
+              <th>판매 품목</th>
+              <th class="center">수량</th>
+              <th class="right">현금계</th>
+              <th class="right">카드</th>
+              <th class="right">총매출</th>
+              <th class="center">거래건수</th>
+            </tr>
+          </thead>
+          <tbody id="monthItemsRows"></tbody>
+        </table>
+      </div>
+    </section>
+
     <section id="yearPanel" class="panel year-panel hidden">
       <div class="panel-head compact">
         <div>
@@ -154,11 +211,40 @@
       <div id="yearCalendar" class="year-calendar"></div>
     </section>
 
+    <section id="yearItemsPanel" class="panel item-summary-panel hidden">
+      <div class="panel-head compact">
+        <div>
+          <span class="section-kicker">ANNUAL ITEMS</span>
+          <h2 id="yearItemsTitle">연간 품목별 집계</h2>
+          <p>같은 품목은 연간 한 줄로 합치고 수량을 누적합니다.</p>
+        </div>
+        <span id="yearItemsCount" class="count">0품목</span>
+      </div>
+
+      <div class="table-scroll">
+        <table class="excel-table">
+          <thead>
+            <tr>
+              <th>판매 품목</th>
+              <th class="center">수량</th>
+              <th class="right">현금계</th>
+              <th class="right">카드</th>
+              <th class="right">총매출</th>
+              <th class="center">거래건수</th>
+            </tr>
+          </thead>
+          <tbody id="yearItemsRows"></tbody>
+        </table>
+      </div>
+    </section>
+
     <div class="foot-status">
       <span id="lastUpdated">마지막 갱신: -</span>
       <span>KCEM · Supabase 통합 DB</span>
     </div>
   </main>
+
+  <section id="printSheet" class="print-sheet" aria-hidden="true"></section>
 
   <script src="./config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

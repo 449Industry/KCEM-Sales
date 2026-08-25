@@ -13,6 +13,9 @@
   const won = value =>
     `${Number(value || 0).toLocaleString("ko-KR")}원`;
 
+  const num = value =>
+    Number(value || 0).toLocaleString("ko-KR");
+
   const pad = n => String(n).padStart(2, "0");
 
   function kstParts() {
@@ -322,6 +325,49 @@
     return summary;
   }
 
+  function aggregateItems(rows) {
+    const map = new Map();
+
+    for (const row of rows) {
+      const itemName = String(row.item_name || "미지정 품목").trim() || "미지정 품목";
+      const key = itemName;
+      const qty = Math.max(1, Number(row.quantity || 1));
+      const amount = Number(row.amount || 0);
+
+      if (!map.has(key)) {
+        map.set(key, {
+          itemName,
+          quantity: 0,
+          cashGroup: 0,
+          card: 0,
+          total: 0,
+          transactions: 0
+        });
+      }
+
+      const item = map.get(key);
+      item.quantity += qty;
+      item.total += amount;
+      item.transactions += 1;
+
+      if (
+        row.payment_method === "현금" ||
+        row.payment_method === "계좌" ||
+        row.payment_method === "시루"
+      ) {
+        item.cashGroup += amount;
+      } else if (row.payment_method === "카드") {
+        item.card += amount;
+      }
+    }
+
+    return [...map.values()].sort((a, b) =>
+      b.total - a.total ||
+      b.quantity - a.quantity ||
+      a.itemName.localeCompare(b.itemName, "ko")
+    );
+  }
+
   function currentDayRows() {
     if (!state.selectedDay) return [];
     return monthRows().filter(row => row.sale_date === state.selectedDay);
@@ -382,17 +428,14 @@
 
   function setQuickSummary() {
     let rows = [];
-    let label = "현금";
+    let label = "현금계";
 
     if (state.view === "detail") {
       rows = currentDayRows();
-      label = "현금계";
     } else if (state.view === "month") {
       rows = monthRows();
-      label = "현금계";
     } else {
       rows = state.rows;
-      label = "현금계";
     }
 
     const summary = summarize(rows);
@@ -417,6 +460,40 @@
       `${state.year}년 ${state.month}월`;
   }
 
+  function paymentClass(method) {
+    if (method === "시루") return "siru";
+    if (method === "카드") return "card";
+    return "";
+  }
+
+  function renderDayItems() {
+    const rows = [...currentDayRows()].sort((a, b) =>
+      String(a.sale_time || "").localeCompare(String(b.sale_time || ""))
+    );
+
+    $("dayItemsTitle").textContent =
+      `${formatSelectedDay(state.selectedDay)} 판매 품목`;
+
+    $("dayItemsCount").textContent = `${rows.length}건`;
+
+    $("dayItemsRows").innerHTML = rows.map(row => `
+      <tr>
+        <td>${escapeHtml(String(row.sale_time || "").slice(0, 5) || "-")}</td>
+        <td class="item">${escapeHtml(row.item_name || "-")}</td>
+        <td>
+          <span class="payment ${paymentClass(row.payment_method)}">
+            ${escapeHtml(row.payment_method)}
+          </span>
+        </td>
+        <td class="center">${Number(row.quantity || 1)}</td>
+        <td class="right"><strong>${won(row.amount)}</strong></td>
+        <td class="memo">${escapeHtml(row.comment || "")}</td>
+      </tr>
+    `).join("");
+
+    $("dayItemsEmpty").classList.toggle("hidden", rows.length !== 0);
+  }
+
   function renderDetail() {
     ensureSelectedDay();
 
@@ -429,10 +506,10 @@
     });
 
     $("detailTitle").textContent =
-      `${state.year}년 ${state.month}월 건별 매출내역`;
+      `${state.year}년 ${state.month}월 전체 건별 매출내역`;
 
     $("detailSub").textContent =
-      "전체 건별 내역은 유지하고, 선택한 행의 날짜만 위에서 집계합니다.";
+      "위에는 선택 날짜 판매 품목, 아래에는 해당 월 전체 거래를 표시합니다.";
 
     $("detailCount").textContent = `${rows.length}건`;
 
@@ -441,24 +518,17 @@
         state.selectedDay &&
         row.sale_date === state.selectedDay;
 
-      const paymentClass =
-        row.payment_method === "시루"
-          ? "siru"
-          : row.payment_method === "카드"
-            ? "card"
-            : "";
-
       return `
         <tr
           class="${selected ? "selected-day-row" : ""}"
           data-date="${escapeHtml(row.sale_date)}"
-          title="이 날짜의 매출 집계 보기"
+          title="이 날짜의 매출 상세 보기"
         >
           <td><strong>${escapeHtml(row.sale_date)}</strong></td>
           <td>${escapeHtml(String(row.sale_time || "").slice(0, 5) || "-")}</td>
           <td class="item">${escapeHtml(row.item_name || "-")}</td>
           <td>
-            <span class="payment ${paymentClass}">
+            <span class="payment ${paymentClass(row.payment_method)}">
               ${escapeHtml(row.payment_method)}
             </span>
           </td>
@@ -469,19 +539,39 @@
       `;
     }).join("");
 
-    $("detailEmpty").classList.toggle(
-      "hidden",
-      rows.length !== 0
-    );
+    $("detailEmpty").classList.toggle("hidden", rows.length !== 0);
 
     $$("#detailRows tr[data-date]").forEach(row => {
       row.addEventListener("click", () => {
         state.selectedDay = row.dataset.date;
         render();
+        window.scrollTo({ top: 0, behavior: "smooth" });
       });
     });
 
     setDaySummary();
+    renderDayItems();
+  }
+
+  function renderMonthItems() {
+    const items = aggregateItems(monthRows());
+
+    $("monthItemsTitle").textContent =
+      `${state.year}년 ${state.month}월 품목별 집계`;
+
+    $("monthItemsCount").textContent =
+      `${items.length}품목`;
+
+    $("monthItemsRows").innerHTML = items.map(item => `
+      <tr>
+        <td class="item">${escapeHtml(item.itemName)}</td>
+        <td class="center"><strong>${num(item.quantity)}</strong></td>
+        <td class="right">${won(item.cashGroup)}</td>
+        <td class="right">${won(item.card)}</td>
+        <td class="right"><strong>${won(item.total)}</strong></td>
+        <td class="center">${num(item.transactions)}건</td>
+      </tr>
+    `).join("");
   }
 
   function renderMonthCalendar() {
@@ -574,6 +664,29 @@
         render();
       });
     });
+
+    renderMonthItems();
+  }
+
+  function renderYearItems() {
+    const items = aggregateItems(state.rows);
+
+    $("yearItemsTitle").textContent =
+      `${state.year}년 품목별 집계`;
+
+    $("yearItemsCount").textContent =
+      `${items.length}품목`;
+
+    $("yearItemsRows").innerHTML = items.map(item => `
+      <tr>
+        <td class="item">${escapeHtml(item.itemName)}</td>
+        <td class="center"><strong>${num(item.quantity)}</strong></td>
+        <td class="right">${won(item.cashGroup)}</td>
+        <td class="right">${won(item.card)}</td>
+        <td class="right"><strong>${won(item.total)}</strong></td>
+        <td class="center">${num(item.transactions)}건</td>
+      </tr>
+    `).join("");
   }
 
   function renderYearCalendar() {
@@ -626,28 +739,20 @@
         render();
       });
     });
+
+    renderYearItems();
   }
 
   function render() {
-    $("detailPanel").classList.toggle(
-      "hidden",
-      state.view !== "detail"
-    );
+    $("detailPanel").classList.toggle("hidden", state.view !== "detail");
+    $("detailSummary").classList.toggle("hidden", state.view !== "detail");
+    $("dayItemsPanel").classList.toggle("hidden", state.view !== "detail");
 
-    $("detailSummary").classList.toggle(
-      "hidden",
-      state.view !== "detail"
-    );
+    $("monthPanel").classList.toggle("hidden", state.view !== "month");
+    $("monthItemsPanel").classList.toggle("hidden", state.view !== "month");
 
-    $("monthPanel").classList.toggle(
-      "hidden",
-      state.view !== "month"
-    );
-
-    $("yearPanel").classList.toggle(
-      "hidden",
-      state.view !== "year"
-    );
+    $("yearPanel").classList.toggle("hidden", state.view !== "year");
+    $("yearItemsPanel").classList.toggle("hidden", state.view !== "year");
 
     for (const button of $$(".tab")) {
       button.classList.toggle(
@@ -713,6 +818,260 @@
     }
   }
 
+  function summaryCardsHtml(rows) {
+    const s = summarize(rows);
+
+    return `
+      <table class="print-summary-table">
+        <thead>
+          <tr>
+            <th>현금계</th>
+            <th>카드</th>
+            <th>총매출</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${won(s.cashGroup)}</td>
+            <td>${won(s.card)}</td>
+            <td><strong>${won(s.total)}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+  }
+
+  function printItemAggregateTable(items) {
+    return `
+      <table class="print-data-table">
+        <thead>
+          <tr>
+            <th>판매 품목</th>
+            <th>수량</th>
+            <th>현금계</th>
+            <th>카드</th>
+            <th>총매출</th>
+            <th>거래건수</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(item => `
+            <tr>
+              <td>${escapeHtml(item.itemName)}</td>
+              <td class="p-center">${num(item.quantity)}</td>
+              <td class="p-right">${won(item.cashGroup)}</td>
+              <td class="p-right">${won(item.card)}</td>
+              <td class="p-right"><strong>${won(item.total)}</strong></td>
+              <td class="p-center">${num(item.transactions)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function buildDailyPrint() {
+    const dayRows = [...currentDayRows()].sort((a, b) =>
+      String(a.sale_time || "").localeCompare(String(b.sale_time || ""))
+    );
+    const monthly = [...monthRows()].sort((a, b) =>
+      String(a.sale_date).localeCompare(String(b.sale_date)) ||
+      String(a.sale_time || "").localeCompare(String(b.sale_time || ""))
+    );
+
+    return `
+      <div class="print-title">
+        <h1>박물관 일매출</h1>
+        <p>${state.year}년 ${state.month}월 · ${formatSelectedDay(state.selectedDay)}</p>
+      </div>
+
+      ${summaryCardsHtml(dayRows)}
+
+      <h2>선택일 판매 품목 상세</h2>
+      <table class="print-data-table">
+        <thead>
+          <tr>
+            <th>시간</th>
+            <th>판매 품목</th>
+            <th>결제</th>
+            <th>수량</th>
+            <th>금액</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${dayRows.map(row => `
+            <tr>
+              <td>${escapeHtml(String(row.sale_time || "").slice(0, 5) || "-")}</td>
+              <td>${escapeHtml(row.item_name || "-")}</td>
+              <td>${escapeHtml(row.payment_method)}</td>
+              <td class="p-center">${Number(row.quantity || 1)}</td>
+              <td class="p-right">${won(row.amount)}</td>
+              <td>${escapeHtml(row.comment || "")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+
+      <h2 class="print-page-section">${state.year}년 ${state.month}월 전체 거래내역</h2>
+      <table class="print-data-table">
+        <thead>
+          <tr>
+            <th>날짜</th>
+            <th>시간</th>
+            <th>판매 품목</th>
+            <th>결제</th>
+            <th>수량</th>
+            <th>금액</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${monthly.map(row => `
+            <tr>
+              <td>${escapeHtml(row.sale_date)}</td>
+              <td>${escapeHtml(String(row.sale_time || "").slice(0, 5) || "-")}</td>
+              <td>${escapeHtml(row.item_name || "-")}</td>
+              <td>${escapeHtml(row.payment_method)}</td>
+              <td class="p-center">${Number(row.quantity || 1)}</td>
+              <td class="p-right">${won(row.amount)}</td>
+              <td>${escapeHtml(row.comment || "")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function buildMonthlyPrint() {
+    const rows = monthRows();
+    const items = aggregateItems(rows);
+    const grouped = new Map();
+
+    for (const row of rows) {
+      if (!grouped.has(row.sale_date)) grouped.set(row.sale_date, []);
+      grouped.get(row.sale_date).push(row);
+    }
+
+    const dates = [...grouped.keys()].sort();
+
+    return `
+      <div class="print-title">
+        <h1>박물관 월매출</h1>
+        <p>${state.year}년 ${state.month}월</p>
+      </div>
+
+      ${summaryCardsHtml(rows)}
+
+      <h2>품목별 집계</h2>
+      ${printItemAggregateTable(items)}
+
+      <h2 class="print-page-section">일자별 매출</h2>
+      <table class="print-data-table">
+        <thead>
+          <tr>
+            <th>날짜</th>
+            <th>현금계</th>
+            <th>카드</th>
+            <th>총매출</th>
+            <th>건수</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${dates.map(date => {
+            const dayRows = grouped.get(date);
+            const s = summarize(dayRows);
+
+            return `
+              <tr>
+                <td>${escapeHtml(date)}</td>
+                <td class="p-right">${won(s.cashGroup)}</td>
+                <td class="p-right">${won(s.card)}</td>
+                <td class="p-right"><strong>${won(s.total)}</strong></td>
+                <td class="p-center">${dayRows.length}</td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function buildAnnualPrint() {
+    const items = aggregateItems(state.rows);
+
+    return `
+      <div class="print-title">
+        <h1>박물관 연매출</h1>
+        <p>${state.year}년</p>
+      </div>
+
+      ${summaryCardsHtml(state.rows)}
+
+      <h2>월별 매출</h2>
+      <table class="print-data-table">
+        <thead>
+          <tr>
+            <th>월</th>
+            <th>현금계</th>
+            <th>카드</th>
+            <th>총매출</th>
+            <th>건수</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Array.from({ length: 12 }, (_, i) => i + 1).map(month => {
+            const rows = monthRows(month);
+            const s = summarize(rows);
+
+            return `
+              <tr>
+                <td>${month}월</td>
+                <td class="p-right">${won(s.cashGroup)}</td>
+                <td class="p-right">${won(s.card)}</td>
+                <td class="p-right"><strong>${won(s.total)}</strong></td>
+                <td class="p-center">${rows.length}</td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+
+      <h2 class="print-page-section">연간 품목별 집계</h2>
+      ${printItemAggregateTable(items)}
+    `;
+  }
+
+  function printCurrentView() {
+    let content = "";
+
+    if (state.view === "detail") {
+      content = buildDailyPrint();
+    } else if (state.view === "month") {
+      content = buildMonthlyPrint();
+    } else {
+      content = buildAnnualPrint();
+    }
+
+    $("printSheet").innerHTML = `
+      <div class="print-document">
+        ${content}
+        <div class="print-footer">
+          출력일시: ${new Intl.DateTimeFormat("ko-KR", {
+            timeZone: "Asia/Seoul",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          }).format(new Date())}
+        </div>
+      </div>
+    `;
+
+    window.print();
+  }
+
   function bindEvents() {
     for (const button of $$(".tab")) {
       button.addEventListener("click", () => {
@@ -742,6 +1101,7 @@
     $("logoutBtn").addEventListener("click", logout);
     $("prevBtn").addEventListener("click", () => stepPeriod(-1));
     $("nextBtn").addEventListener("click", () => stepPeriod(1));
+    $("printBtn").addEventListener("click", printCurrentView);
 
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden && getToken()) {

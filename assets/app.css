@@ -662,3 +662,195 @@ tbody tr.selected-day-row td:first-child {
     font-size: 9px !important;
   }
 }
+
+
+/* v1.3.0 item summaries + print */
+.control-bar {
+  grid-template-columns: auto minmax(220px, 1fr) auto auto !important;
+}
+
+.print-btn {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid var(--red);
+  border-radius: 10px;
+  color: var(--red-dark);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.print-btn:hover {
+  color: #fff;
+  background: var(--red);
+}
+
+.item-summary-panel {
+  margin-bottom: 14px;
+}
+
+.excel-table th,
+.excel-table td {
+  border-right: 1px solid var(--line);
+}
+
+.excel-table th:last-child,
+.excel-table td:last-child {
+  border-right: 0;
+}
+
+.day-item-table tbody tr {
+  cursor: default;
+}
+
+.print-sheet {
+  display: none;
+}
+
+@media (max-width: 1120px) {
+  .control-bar {
+    grid-template-columns: auto 1fr auto !important;
+  }
+
+  .quick-summary {
+    grid-column: 1 / 3 !important;
+  }
+
+  .print-btn {
+    grid-column: 3;
+    grid-row: 2;
+    align-self: stretch;
+  }
+}
+
+@media (max-width: 760px) {
+  .control-bar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .quick-summary,
+  .print-btn {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+
+  .print-btn {
+    width: 100%;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 11mm;
+  }
+
+  html,
+  body {
+    width: auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #111 !important;
+    font-family: "Malgun Gothic", "Noto Sans KR", sans-serif !important;
+  }
+
+  body > *:not(.print-sheet) {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: block !important;
+  }
+
+  .print-document {
+    width: 100%;
+  }
+
+  .print-title {
+    margin-bottom: 8mm;
+    padding-bottom: 4mm;
+    border-bottom: 2px solid #333;
+  }
+
+  .print-title h1 {
+    margin: 0 0 2mm;
+    font-size: 18pt;
+  }
+
+  .print-title p {
+    margin: 0;
+    font-size: 10pt;
+  }
+
+  .print-document h2 {
+    margin: 7mm 0 3mm;
+    font-size: 12pt;
+  }
+
+  .print-summary-table,
+  .print-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+    page-break-inside: auto;
+  }
+
+  .print-summary-table th,
+  .print-summary-table td,
+  .print-data-table th,
+  .print-data-table td {
+    padding: 2.2mm 2.5mm;
+    border: 1px solid #777;
+    font-size: 8.5pt;
+    line-height: 1.35;
+    vertical-align: middle;
+  }
+
+  .print-summary-table th,
+  .print-data-table th {
+    background: #eee !important;
+    font-weight: 800;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-summary-table td {
+    font-size: 11pt;
+    text-align: center;
+  }
+
+  .print-data-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .print-data-table thead {
+    display: table-header-group;
+  }
+
+  .p-right {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .p-center {
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .print-page-section {
+    break-before: auto;
+  }
+
+  .print-footer {
+    margin-top: 6mm;
+    padding-top: 2mm;
+    border-top: 1px solid #aaa;
+    color: #666;
+    font-size: 7.5pt;
+    text-align: right;
+  }
+}
