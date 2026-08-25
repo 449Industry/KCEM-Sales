@@ -13,21 +13,8 @@
       <div class="eyebrow dark">KCEM · SALES</div>
       <h1>박물관 매출 조회</h1>
       <p>조회 PIN을 입력하세요. 인증된 기기는 30일 동안 유지됩니다.</p>
-
-      <input
-        id="pinInput"
-        type="password"
-        inputmode="numeric"
-        autocomplete="current-password"
-        maxlength="32"
-        placeholder="조회 PIN"
-        autofocus
-      />
-
-      <button id="pinSubmit" class="primary-btn" type="submit">
-        확인
-      </button>
-
+      <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password" maxlength="32" placeholder="조회 PIN" autofocus />
+      <button id="pinSubmit" class="primary-btn" type="submit">확인</button>
       <div id="pinMessage" class="pin-message"></div>
     </form>
   </div>
@@ -37,7 +24,6 @@
       <div class="eyebrow">KCEM · MUSEUM SALES</div>
       <h1>박물관 매출관리</h1>
     </div>
-
     <div class="top-actions">
       <span id="statusBadge" class="status-badge">연결 준비</span>
       <button id="logoutBtn" class="top-btn hidden">이 기기 인증 해제</button>
@@ -47,116 +33,81 @@
   <main class="shell">
     <section class="toolbar">
       <div class="tabs">
-        <button class="tab active" data-view="day">일매출</button>
+        <button class="tab active" data-view="detail">일매출</button>
         <button class="tab" data-view="month">월매출</button>
         <button class="tab" data-view="year">연매출</button>
       </div>
 
       <div class="period">
         <button id="prevBtn" class="nav-btn" aria-label="이전">‹</button>
-
-        <div id="dayBox">
-          <input id="dayInput" class="period-input" type="date" />
-        </div>
-
-        <div id="monthBox" class="hidden">
+        <div id="monthBox">
           <select id="monthInput" class="period-input">
-            <option value="1">1월</option>
-            <option value="2">2월</option>
-            <option value="3">3월</option>
-            <option value="4">4월</option>
-            <option value="5">5월</option>
-            <option value="6">6월</option>
-            <option value="7">7월</option>
-            <option value="8">8월</option>
-            <option value="9">9월</option>
-            <option value="10">10월</option>
-            <option value="11">11월</option>
-            <option value="12">12월</option>
+            <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option>
+            <option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option>
+            <option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
           </select>
         </div>
-
         <select id="yearInput" class="period-input year-input"></select>
-
         <button id="nextBtn" class="nav-btn" aria-label="다음">›</button>
       </div>
     </section>
 
-    <section class="summary-grid">
-      <article class="summary-card">
-        <span>계좌</span>
-        <strong id="sumAccount">0원</strong>
-      </article>
-
-      <article class="summary-card">
-        <span>현금</span>
-        <strong id="sumCash">0원</strong>
-      </article>
-
-      <article class="summary-card">
-        <span>카드</span>
-        <strong id="sumCard">0원</strong>
-      </article>
-
-      <article class="summary-card total">
-        <span>총매출</span>
-        <strong id="sumTotal">0원</strong>
-      </article>
+    <section id="detailSummary" class="summary-grid detail-summary">
+      <article class="summary-card"><span>현금</span><strong id="sumCashOnly">0원</strong></article>
+      <article class="summary-card"><span>계좌</span><strong id="sumAccount">0원</strong></article>
+      <article class="summary-card"><span>시루</span><strong id="sumSiru">0원</strong></article>
+      <article class="summary-card"><span>카드</span><strong id="sumCardDetail">0원</strong></article>
+      <article class="summary-card total"><span>총매출</span><strong id="sumTotalDetail">0원</strong></article>
     </section>
 
-    <section id="dayPanel" class="panel">
+    <section id="calendarSummary" class="summary-grid calendar-summary hidden">
+      <article class="summary-card"><span>현금 · 계좌 · 시루</span><strong id="sumCashGroup">0원</strong></article>
+      <article class="summary-card"><span>카드</span><strong id="sumCardGroup">0원</strong></article>
+      <article class="summary-card total"><span>총매출</span><strong id="sumTotalGroup">0원</strong></article>
+    </section>
+
+    <section id="detailPanel" class="panel">
       <div class="panel-head">
         <div>
-          <h2 id="dayTitle">일매출</h2>
-          <p>판매 건별 내역</p>
+          <h2 id="detailTitle">건별 매출내역</h2>
+          <p id="detailSub">판매가 발생한 건만 시간순으로 표시합니다.</p>
         </div>
-        <span id="dayCount" class="count">0건</span>
+        <div class="panel-actions">
+          <button id="clearDayFilter" class="mini-btn hidden">날짜 필터 해제</button>
+          <span id="detailCount" class="count">0건</span>
+        </div>
       </div>
-
       <div class="table-scroll">
-        <table>
+        <table class="detail-table">
           <thead>
             <tr>
+              <th>날짜</th>
               <th>시간</th>
+              <th>판매 품목</th>
               <th>결제</th>
               <th class="right">금액</th>
-              <th>판매 품목</th>
               <th class="center">수량</th>
               <th>비고</th>
             </tr>
           </thead>
-          <tbody id="dayRows"></tbody>
+          <tbody id="detailRows"></tbody>
         </table>
       </div>
-
-      <div id="dayEmpty" class="empty hidden">
-        이 날짜의 매출 기록이 없습니다.
-      </div>
+      <div id="detailEmpty" class="empty hidden">이 기간의 매출 기록이 없습니다.</div>
     </section>
 
     <section id="monthPanel" class="panel hidden">
       <div class="panel-head">
         <div>
           <h2 id="monthTitle">월매출</h2>
-          <p>날짜별 매출 합계</p>
+          <p>현금은 현금 + 계좌 + 시루를 합산합니다. 날짜를 누르면 건별 상세내역으로 이동합니다.</p>
         </div>
-        <span id="monthCount" class="count">0일</span>
       </div>
-
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>날짜</th>
-              <th class="right">계좌</th>
-              <th class="right">현금</th>
-              <th class="right">카드</th>
-              <th class="right">일합계</th>
-              <th class="center">건수</th>
-            </tr>
-          </thead>
-          <tbody id="monthRows"></tbody>
-        </table>
+      <div class="calendar-wrap">
+        <div class="weekday-row">
+          <div class="sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="sat">토</div>
+        </div>
+        <div id="monthCalendar" class="month-calendar"></div>
       </div>
     </section>
 
@@ -164,38 +115,10 @@
       <div class="panel-head">
         <div>
           <h2 id="yearTitle">연매출</h2>
-          <p>월별 매출 합계</p>
+          <p>월별 현금(현금 + 계좌 + 시루), 카드, 총매출을 한눈에 봅니다.</p>
         </div>
-        <span class="count">12개월</span>
       </div>
-
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>월</th>
-              <th class="right">계좌</th>
-              <th class="right">현금</th>
-              <th class="right">카드</th>
-              <th class="right">월합계</th>
-              <th class="center">건수</th>
-            </tr>
-          </thead>
-
-          <tbody id="yearRows"></tbody>
-
-          <tfoot>
-            <tr>
-              <th>연간 합계</th>
-              <th id="yearAccount" class="right">0원</th>
-              <th id="yearCash" class="right">0원</th>
-              <th id="yearCard" class="right">0원</th>
-              <th id="yearTotal" class="right">0원</th>
-              <th id="yearCount" class="center">0건</th>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+      <div id="yearCalendar" class="year-calendar"></div>
     </section>
 
     <div class="foot-status">
