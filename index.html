@@ -3,27 +3,37 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#171b21" />
-  <title>KCEM 박물관 매출</title>
+  <meta name="theme-color" content="#332623" />
+  <title>한국공예체험박물관 매출관리</title>
   <link rel="stylesheet" href="./assets/app.css" />
 </head>
 <body>
   <div id="pinOverlay" class="overlay hidden">
     <form id="pinForm" class="pin-card">
-      <div class="eyebrow dark">KCEM · SALES</div>
+      <div class="pin-logo-wrap">
+        <img src="./assets/kcem_logo.png" alt="한국공예체험박물관" class="pin-logo" />
+      </div>
+      <div class="pin-label">KCEM SALES</div>
       <h1>박물관 매출 조회</h1>
       <p>조회 PIN을 입력하세요. 인증된 기기는 30일 동안 유지됩니다.</p>
-      <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password" maxlength="32" placeholder="조회 PIN" autofocus />
+      <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password"
+             maxlength="32" placeholder="조회 PIN" autofocus />
       <button id="pinSubmit" class="primary-btn" type="submit">확인</button>
       <div id="pinMessage" class="pin-message"></div>
     </form>
   </div>
 
   <header class="topbar">
-    <div>
-      <div class="eyebrow">KCEM · MUSEUM SALES</div>
-      <h1>박물관 매출관리</h1>
+    <div class="brand">
+      <div class="brand-logo-box">
+        <img src="./assets/kcem_logo.png" alt="한국공예체험박물관" class="brand-logo" />
+      </div>
+      <div class="brand-title">
+        <span>SALES DASHBOARD</span>
+        <strong>박물관 매출관리</strong>
+      </div>
     </div>
+
     <div class="top-actions">
       <span id="statusBadge" class="status-badge">연결 준비</span>
       <button id="logoutBtn" class="top-btn hidden">이 기기 인증 해제</button>
@@ -31,52 +41,81 @@
   </header>
 
   <main class="shell">
-    <section class="toolbar">
+    <section class="control-bar">
       <div class="tabs">
         <button class="tab active" data-view="detail">일매출</button>
         <button class="tab" data-view="month">월매출</button>
         <button class="tab" data-view="year">연매출</button>
       </div>
 
-      <div class="period">
+      <div class="period-nav">
         <button id="prevBtn" class="nav-btn" aria-label="이전">‹</button>
-        <div id="monthBox">
-          <select id="monthInput" class="period-input">
-            <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option>
-            <option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option>
-            <option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-          </select>
+        <div class="period-copy">
+          <span id="periodEyebrow">조회기간</span>
+          <strong id="periodTitle">2026년 8월</strong>
         </div>
-        <select id="yearInput" class="period-input year-input"></select>
         <button id="nextBtn" class="nav-btn" aria-label="다음">›</button>
+      </div>
+
+      <div class="quick-summary">
+        <div class="quick-item">
+          <span id="quickCashLabel">현금</span>
+          <strong id="quickCash">0원</strong>
+        </div>
+        <div class="quick-item">
+          <span>카드</span>
+          <strong id="quickCard">0원</strong>
+        </div>
+        <div class="quick-item quick-total">
+          <span>총매출</span>
+          <strong id="quickTotal">0원</strong>
+        </div>
       </div>
     </section>
 
-    <section id="detailSummary" class="summary-grid detail-summary">
-      <article class="summary-card"><span>현금</span><strong id="sumCashOnly">0원</strong></article>
-      <article class="summary-card"><span>계좌</span><strong id="sumAccount">0원</strong></article>
-      <article class="summary-card"><span>시루</span><strong id="sumSiru">0원</strong></article>
-      <article class="summary-card"><span>카드</span><strong id="sumCardDetail">0원</strong></article>
-      <article class="summary-card total"><span>총매출</span><strong id="sumTotalDetail">0원</strong></article>
-    </section>
+    <section id="detailSummary" class="day-summary-block">
+      <div class="day-summary-head">
+        <div>
+          <span class="section-kicker">SELECTED DAY</span>
+          <h2 id="selectedDayTitle">선택된 날짜</h2>
+        </div>
+        <p>아래 건별 내역에서 행을 선택하면 해당 날짜의 매출만 집계합니다.</p>
+      </div>
 
-    <section id="calendarSummary" class="summary-grid calendar-summary hidden">
-      <article class="summary-card"><span>현금 · 계좌 · 시루</span><strong id="sumCashGroup">0원</strong></article>
-      <article class="summary-card"><span>카드</span><strong id="sumCardGroup">0원</strong></article>
-      <article class="summary-card total"><span>총매출</span><strong id="sumTotalGroup">0원</strong></article>
+      <div class="summary-grid detail-summary">
+        <article class="summary-card">
+          <span>현금</span>
+          <strong id="sumCashOnly">0원</strong>
+        </article>
+        <article class="summary-card">
+          <span>계좌</span>
+          <strong id="sumAccount">0원</strong>
+        </article>
+        <article class="summary-card siru-card">
+          <span>시루</span>
+          <strong id="sumSiru">0원</strong>
+        </article>
+        <article class="summary-card">
+          <span>카드</span>
+          <strong id="sumCardDetail">0원</strong>
+        </article>
+        <article class="summary-card total">
+          <span>총매출</span>
+          <strong id="sumTotalDetail">0원</strong>
+        </article>
+      </div>
     </section>
 
     <section id="detailPanel" class="panel">
-      <div class="panel-head">
+      <div class="panel-head compact">
         <div>
+          <span class="section-kicker">TRANSACTIONS</span>
           <h2 id="detailTitle">건별 매출내역</h2>
-          <p id="detailSub">판매가 발생한 건만 시간순으로 표시합니다.</p>
+          <p id="detailSub">판매가 발생한 건만 날짜·시간순으로 표시합니다.</p>
         </div>
-        <div class="panel-actions">
-          <button id="clearDayFilter" class="mini-btn hidden">날짜 필터 해제</button>
-          <span id="detailCount" class="count">0건</span>
-        </div>
+        <span id="detailCount" class="count">0건</span>
       </div>
+
       <div class="table-scroll">
         <table class="detail-table">
           <thead>
@@ -96,13 +135,15 @@
       <div id="detailEmpty" class="empty hidden">이 기간의 매출 기록이 없습니다.</div>
     </section>
 
-    <section id="monthPanel" class="panel hidden">
-      <div class="panel-head">
+    <section id="monthPanel" class="panel calendar-panel hidden">
+      <div class="panel-head compact">
         <div>
+          <span class="section-kicker">MONTHLY CALENDAR</span>
           <h2 id="monthTitle">월매출</h2>
-          <p>현금은 현금 + 계좌 + 시루를 합산합니다. 날짜를 누르면 건별 상세내역으로 이동합니다.</p>
+          <p>현금은 현금 + 계좌 + 시루를 합산합니다. 매출이 있는 날짜를 누르면 건별 내역으로 이동합니다.</p>
         </div>
       </div>
+
       <div class="calendar-wrap">
         <div class="weekday-row">
           <div class="sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="sat">토</div>
@@ -111,11 +152,12 @@
       </div>
     </section>
 
-    <section id="yearPanel" class="panel hidden">
-      <div class="panel-head">
+    <section id="yearPanel" class="panel year-panel hidden">
+      <div class="panel-head compact">
         <div>
+          <span class="section-kicker">ANNUAL CALENDAR</span>
           <h2 id="yearTitle">연매출</h2>
-          <p>월별 현금(현금 + 계좌 + 시루), 카드, 총매출을 한눈에 봅니다.</p>
+          <p>1년의 매출을 12개월 카드로 확인합니다. 월을 누르면 해당 월 달력으로 이동합니다.</p>
         </div>
       </div>
       <div id="yearCalendar" class="year-calendar"></div>
@@ -123,7 +165,7 @@
 
     <div class="foot-status">
       <span id="lastUpdated">마지막 갱신: -</span>
-      <span>조회 전용 · KCEM Supabase</span>
+      <span>KCEM · Supabase 통합 DB</span>
     </div>
   </main>
 

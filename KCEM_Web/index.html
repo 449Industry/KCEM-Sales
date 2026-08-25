@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KCEM 박물관 매출</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <section id="pinView" class="center-view">
+    <div class="login-card">
+      <div class="brand">KCEM</div>
+      <h1>박물관 매출 조회</h1>
+      <p class="muted">공용 조회 PIN을 입력하면 일·월·연 매출을 확인할 수 있습니다.</p>
+      <label for="viewerPin">조회 PIN</label>
+      <input id="viewerPin" type="password" inputmode="numeric" autocomplete="off" />
+      <button id="unlockButton" class="primary wide">조회 시작</button>
+      <div id="pinMessage" class="message"></div>
+    </div>
+  </section>
+
+  <div id="appView" class="hidden">
+    <header class="header">
+      <div class="header-brand"><strong>KCEM</strong><span>박물관 매출</span></div>
+      <nav>
+        <button class="nav active" data-page="daily">일별</button>
+        <button class="nav" data-page="month">월별</button>
+        <button class="nav" data-page="year">연간</button>
+      </nav>
+      <div class="account"><span id="adminState">조회 전용</span><button id="lockButton">잠금</button></div>
+    </header>
+
+    <main>
+      <section id="dailyPage" class="page">
+        <div class="page-head">
+          <div><h2>일별 매출</h2><p class="muted">건별 결제수단은 현금·계좌·시루·카드로 구분합니다.</p></div>
+          <div class="date-nav"><button id="prevDay">◀</button><input id="dailyDate" type="date" /><button id="nextDay">▶</button></div>
+        </div>
+        <div id="dailyKpis" class="kpi-grid three"></div>
+        <section class="panel"><div id="dailyTable"></div></section>
+      </section>
+
+      <section id="monthPage" class="page hidden">
+        <div class="page-head"><div><h2>월 매출</h2><p class="muted">날짜를 누르면 건별 내역으로 이동합니다.</p></div><div class="date-nav"><button id="prevMonth">◀</button><input id="monthPicker" type="month" /><button id="nextMonth">▶</button></div></div>
+        <div id="monthKpis" class="kpi-grid three"></div>
+        <section class="panel"><div id="monthCalendar" class="calendar"></div></section>
+      </section>
+
+      <section id="yearPage" class="page hidden">
+        <div class="page-head"><div><h2>연 매출</h2><p class="muted">월을 누르면 월 화면으로 이동합니다.</p></div><div class="date-nav"><button id="prevYear">◀</button><input id="yearInput" type="number" min="2000" max="2100" /><button id="nextYear">▶</button></div></div>
+        <div id="yearKpis" class="kpi-grid three"></div>
+        <div id="yearCards" class="year-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="adminModal" class="modal hidden">
+    <div class="modal-card">
+      <button class="close" data-close="adminModal">×</button>
+      <h3>관리자 인증 필요</h3>
+      <p class="muted">수정·삭제할 때만 Supabase 관리자 이메일로 인증합니다.</p>
+      <label>관리자 이메일</label><input id="adminEmail" type="email" autocomplete="username" />
+      <label>비밀번호</label><input id="adminPassword" type="password" autocomplete="current-password" />
+      <button id="adminLoginButton" class="primary wide">관리자 인증</button>
+      <div id="adminMessage" class="message"></div>
+    </div>
+  </div>
+
+  <div id="editModal" class="modal hidden">
+    <div class="modal-card edit-card">
+      <button class="close" data-close="editModal">×</button>
+      <h3>박물관 매출 수정</h3>
+      <div class="edit-grid">
+        <label>날짜<input id="editDate" type="date" /></label>
+        <label>결제수단<select id="editPayment"><option>현금</option><option>계좌</option><option>시루</option><option>카드</option></select></label>
+        <label>금액<input id="editAmount" type="number" min="1" /></label>
+        <label>수량<input id="editQty" type="number" min="1" /></label>
+        <label class="span2">판매품목<input id="editItem" type="text" /></label>
+        <label class="span2">비고<input id="editComment" type="text" /></label>
+      </div>
+      <div class="actions"><button id="deleteButton" class="danger">삭제</button><span></span><button id="saveEditButton" class="primary">수정 저장</button></div>
+      <div id="editMessage" class="message"></div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
