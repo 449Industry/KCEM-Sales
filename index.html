@@ -4,15 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#332623" />
-  <title>한국공예체험박물관 매출관리</title>
+  <title>한국공예체험박물관 운영관리</title>
   <link rel="stylesheet" href="./assets/app.css" />
 </head>
 <body>
   <div id="pinOverlay" class="overlay hidden">
     <form id="pinForm" class="pin-card">
-      <div class="pin-label">KCEM SALES</div>
-      <h1>박물관 매출 조회</h1>
-      <p>조회 PIN을 입력하세요. 인증된 기기는 30일 동안 유지됩니다.</p>
+      <div class="pin-label">KCEM OPERATIONS</div>
+      <h1>박물관 운영관리</h1>
+      <p>공용 PIN을 입력하세요. 인증된 기기는 30일 동안 유지됩니다.</p>
       <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password"
              maxlength="32" placeholder="조회 PIN" autofocus />
       <button id="pinSubmit" class="primary-btn" type="submit">확인</button>
@@ -22,8 +22,8 @@
 
   <header class="topbar">
     <div class="brand-simple">
-      <span>KCEM SALES</span>
-      <strong>박물관 매출관리</strong>
+      <span>KCEM</span>
+      <strong>박물관 운영관리</strong>
     </div>
     <div class="top-actions">
       <span id="statusBadge" class="status-badge">연결 준비</span>
@@ -31,7 +31,14 @@
     </div>
   </header>
 
-  <main class="shell">
+  <nav class="module-nav" aria-label="박물관 운영 메뉴">
+    <div class="module-nav-inner">
+      <button type="button" class="module-tab active" data-module="sales">매출</button>
+      <button type="button" class="module-tab" data-module="tasks">업무공유</button>
+    </div>
+  </nav>
+
+  <main id="salesApp" class="shell">
     <section class="control-bar">
       <div class="tabs">
         <button class="tab active" data-view="detail">일매출</button>
@@ -246,6 +253,181 @@
     </div>
   </main>
 
+  <main id="taskApp" class="shell task-shell hidden">
+    <section class="task-hero">
+      <div>
+        <span class="section-kicker">TEAM TASK BOARD</span>
+        <h1>업무공유</h1>
+        <p>해야 할 일을 남기고 담당자를 지정해 모두가 현재 상태를 바로 확인합니다.</p>
+      </div>
+      <div class="task-user-box">
+        <label for="currentMemberSelect">현재 작성자</label>
+        <select id="currentMemberSelect"></select>
+        <button id="memberManageBtn" type="button" class="task-outline-btn">팀원관리</button>
+      </div>
+    </section>
+
+    <section class="task-entry panel">
+      <div class="task-entry-grid">
+        <label class="task-field category-field">
+          <span>분류</span>
+          <input id="taskCategory" type="text" list="taskCategoryList" placeholder="3D 프린트" maxlength="40" />
+          <datalist id="taskCategoryList">
+            <option value="3D 프린트"></option>
+            <option value="제작"></option>
+            <option value="구매"></option>
+            <option value="박물관"></option>
+            <option value="정리"></option>
+            <option value="기타"></option>
+          </datalist>
+        </label>
+
+        <label class="task-field task-title-field">
+          <span>업무 내용</span>
+          <input id="taskTitle" type="text" placeholder="오행거북이 5종 3개씩 필요" maxlength="160" />
+        </label>
+
+        <label class="task-field quantity-field">
+          <span>수량</span>
+          <input id="taskQuantity" type="number" min="1" step="1" placeholder="15" />
+        </label>
+
+        <label class="task-field assignee-field">
+          <span>담당자</span>
+          <select id="taskAssignee"></select>
+        </label>
+
+        <button id="taskAddBtn" type="button" class="task-add-btn">업무 등록</button>
+
+        <label class="task-field detail-field">
+          <span>상세 메모 <em>선택</em></span>
+          <input id="taskDescription" type="text" placeholder="예: 5종 각각 3개 / 출력 후 2층 전달" maxlength="500" />
+        </label>
+      </div>
+      <div id="taskEntryMessage" class="task-entry-message"></div>
+    </section>
+
+    <section class="task-filter-panel">
+      <div id="memberTabs" class="member-tabs"></div>
+      <div class="task-filter-actions">
+        <button id="taskRefreshBtn" type="button" class="task-mini-btn">새로고침</button>
+      </div>
+    </section>
+
+    <section id="taskSetupNotice" class="task-setup-notice hidden">
+      <strong>업무공유 DB 설정이 필요합니다.</strong>
+      <span>ZIP의 <code>supabase/KCEM_TASK_SHARE_SETUP_v1.4.0.sql</code>을 Supabase SQL Editor에서 한 번 실행하세요.</span>
+    </section>
+
+    <section id="taskBoard" class="task-board">
+      <div class="task-column requested-column">
+        <div class="task-column-head">
+          <div><span class="task-status-dot"></span><strong>요청</strong></div>
+          <span id="requestedCount" class="task-count">0</span>
+        </div>
+        <div id="requestedTasks" class="task-card-list"></div>
+      </div>
+
+      <div class="task-column progress-column">
+        <div class="task-column-head">
+          <div><span class="task-status-dot"></span><strong>진행중</strong></div>
+          <span id="progressCount" class="task-count">0</span>
+        </div>
+        <div id="progressTasks" class="task-card-list"></div>
+      </div>
+
+      <div class="task-column done-column">
+        <div class="task-column-head">
+          <div><span class="task-status-dot"></span><strong>완료</strong></div>
+          <span id="doneCount" class="task-count">0</span>
+        </div>
+        <div id="doneTasks" class="task-card-list"></div>
+      </div>
+    </section>
+
+    <div class="foot-status task-foot-status">
+      <span id="taskLastUpdated">마지막 갱신: -</span>
+      <span>공용 PIN · 팀원 선택 방식</span>
+    </div>
+  </main>
+
+
+  <div id="memberOverlay" class="overlay hidden">
+    <div class="task-modal member-modal">
+      <div class="task-modal-head">
+        <div>
+          <div class="pin-label left">TEAM MEMBERS</div>
+          <h2>팀원관리</h2>
+        </div>
+        <button id="memberCloseBtn" class="modal-close" type="button">×</button>
+      </div>
+
+      <div class="member-add-row">
+        <input id="newMemberName" type="text" maxlength="40" placeholder="팀원 이름" />
+        <button id="memberAddBtn" type="button" class="task-add-btn">추가</button>
+      </div>
+      <p class="task-help">삭제는 과거 업무 기록을 보존하기 위해 실제 삭제 대신 비활성 처리합니다.</p>
+      <div id="memberManageList" class="member-manage-list"></div>
+      <div id="memberMessage" class="task-entry-message"></div>
+    </div>
+  </div>
+
+  <div id="taskEditOverlay" class="overlay hidden">
+    <form id="taskEditForm" class="task-modal task-edit-modal">
+      <div class="task-modal-head">
+        <div>
+          <div class="pin-label left">EDIT TASK</div>
+          <h2>업무 수정</h2>
+        </div>
+        <button id="taskEditCloseBtn" class="modal-close" type="button">×</button>
+      </div>
+
+      <input id="taskEditId" type="hidden" />
+      <div class="task-edit-grid">
+        <label class="task-field">
+          <span>분류</span>
+          <input id="taskEditCategory" type="text" maxlength="40" />
+        </label>
+        <label class="task-field">
+          <span>수량</span>
+          <input id="taskEditQuantity" type="number" min="1" step="1" />
+        </label>
+        <label class="task-field span-2">
+          <span>업무 내용</span>
+          <input id="taskEditTitle" type="text" maxlength="160" required />
+        </label>
+        <label class="task-field span-2">
+          <span>상세 메모</span>
+          <textarea id="taskEditDescription" rows="3" maxlength="500"></textarea>
+        </label>
+        <label class="task-field">
+          <span>요청자</span>
+          <select id="taskEditRequester"></select>
+        </label>
+        <label class="task-field">
+          <span>담당자</span>
+          <select id="taskEditAssignee"></select>
+        </label>
+        <label class="task-field span-2">
+          <span>상태</span>
+          <select id="taskEditStatus">
+            <option value="REQUESTED">요청</option>
+            <option value="IN_PROGRESS">진행중</option>
+            <option value="DONE">완료</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="edit-actions">
+        <button id="taskDeleteBtn" class="danger-btn" type="button">삭제</button>
+        <div class="edit-actions-right">
+          <button id="taskEditCancelBtn" class="secondary-btn" type="button">취소</button>
+          <button id="taskEditSaveBtn" class="primary-btn compact" type="submit">저장</button>
+        </div>
+      </div>
+      <div id="taskEditMessage" class="edit-message"></div>
+    </form>
+  </div>
 
   <div id="adminOverlay" class="overlay hidden">
     <form id="adminForm" class="admin-card">
@@ -341,5 +523,6 @@
   <script src="./config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./assets/app.js"></script>
+  <script src="./assets/tasks.js"></script>
 </body>
 </html>

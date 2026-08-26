@@ -151,8 +151,8 @@ declare
     v_expires timestamptz;
 begin
     -- 만료 세션 정리
-    delete from public.kcem_public_sessions
-    where expires_at <= now();
+    delete from public.kcem_public_sessions as s
+    where s.expires_at <= now();
 
     v_device_hash :=
         encode(
