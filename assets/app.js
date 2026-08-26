@@ -48,10 +48,12 @@
     selectedDay: null,
     rows: [],
     loading: false,
-    pollTimer: null
+    pollTimer: null,
+    pendingEditKey: null
   };
 
   let client = null;
+  let adminSessionActive = false;
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -211,6 +213,11 @@
       }
     } catch (_) {}
 
+    try {
+      await client.auth.signOut();
+    } catch (_) {}
+
+    adminSessionActive = false;
     clearAccess();
     stopPolling();
     state.rows = [];
@@ -375,28 +382,35 @@
 
   function preferredSelectedDay() {
     const rows = monthRows();
-
-    if (!rows.length) return null;
-
-    const dateSet = new Set(rows.map(row => row.sale_date));
     const currentYmd = `${now.year}-${pad(now.month)}-${pad(now.day)}`;
 
+    // 현재 월은 매출 유무와 관계없이 오늘 날짜를 기본 선택한다.
     if (
       state.year === now.year &&
-      state.month === now.month &&
-      dateSet.has(currentYmd)
+      state.month === now.month
     ) {
       return currentYmd;
     }
 
-    return [...dateSet].sort().reverse()[0] || null;
+    // 다른 월은 매출이 있으면 가장 최근 매출일,
+    // 없으면 해당 월 1일을 기본 선택한다.
+    if (rows.length) {
+      const dateSet = new Set(rows.map(row => row.sale_date));
+      return [...dateSet].sort().reverse()[0];
+    }
+
+    return `${state.year}-${pad(state.month)}-01`;
   }
 
   function ensureSelectedDay() {
-    const rows = monthRows();
-    const valid = new Set(rows.map(row => row.sale_date));
+    const prefix = `${state.year}-${pad(state.month)}-`;
 
-    if (!state.selectedDay || !valid.has(state.selectedDay)) {
+    // 매출이 없는 날짜도 정상 선택 상태로 유지한다.
+    // 날짜가 없거나 현재 보고 있는 월과 다른 경우에만 기본값을 다시 잡는다.
+    if (
+      !state.selectedDay ||
+      !String(state.selectedDay).startsWith(prefix)
+    ) {
       state.selectedDay = preferredSelectedDay();
     }
   }
@@ -466,6 +480,200 @@
     return "";
   }
 
+  function findTransaction(transactionKey) {
+    return state.rows.find(row =>
+      String(row.transaction_key) === String(transactionKey)
+    ) || null;
+  }
+
+  function adminSessionIsActive() {
+    return adminSessionActive === true;
+  }
+
+  function showAdminLogin(transactionKey) {
+    state.pendingEditKey = transactionKey;
+    $("adminMessage").textContent = "";
+    $("adminPassword").value = "";
+    $("adminOverlay").classList.remove("hidden");
+    setTimeout(() => $("adminEmail").focus(), 50);
+  }
+
+  function hideAdminLogin() {
+    $("adminOverlay").classList.add("hidden");
+    $("adminMessage").textContent = "";
+    $("adminPassword").value = "";
+  }
+
+  function openEdit(transactionKey) {
+    const row = findTransaction(transactionKey);
+    if (!row) return;
+
+    if (!adminSessionIsActive()) {
+      showAdminLogin(transactionKey);
+      return;
+    }
+
+    $("editTransactionKey").value = row.transaction_key;
+    $("editDate").value = row.sale_date || "";
+    $("editTime").value = String(row.sale_time || "").slice(0, 8) || "00:00:00";
+    $("editItem").value = row.item_name || "";
+    $("editPayment").value = row.payment_method || "현금";
+    $("editAmount").value = Number(row.amount || 0);
+    $("editQuantity").value = Number(row.quantity || 1);
+    $("editComment").value = row.comment || "";
+    $("editMessage").textContent = "";
+    $("editOverlay").classList.remove("hidden");
+  }
+
+  function closeEdit() {
+    $("editOverlay").classList.add("hidden");
+    $("editMessage").textContent = "";
+  }
+
+  async function adminLogin(email, password) {
+    $("adminSubmit").disabled = true;
+    $("adminSubmit").textContent = "인증 중…";
+    $("adminMessage").textContent = "";
+
+    try {
+      const { data, error } = await client.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+      if (!data?.user) throw new Error("관리자 인증에 실패했습니다.");
+
+      const { data: roleRows, error: roleError } = await client
+        .from("kcem_user_roles")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .limit(1);
+
+      if (roleError) throw roleError;
+
+      const role = Array.isArray(roleRows) && roleRows[0]
+        ? roleRows[0].role
+        : null;
+
+      if (role !== "admin") {
+        await client.auth.signOut();
+        throw new Error("KCEM 관리자 권한이 없는 계정입니다.");
+      }
+
+      adminSessionActive = true;
+      const pending = state.pendingEditKey;
+      state.pendingEditKey = null;
+      hideAdminLogin();
+
+      if (pending) openEdit(pending);
+    } catch (error) {
+      $("adminMessage").textContent =
+        error?.message || "관리자 인증에 실패했습니다.";
+    } finally {
+      $("adminSubmit").disabled = false;
+      $("adminSubmit").textContent = "인증";
+    }
+  }
+
+  async function saveEdit() {
+    const transactionKey = $("editTransactionKey").value;
+
+    if (!transactionKey) return;
+
+    const payload = {
+      sale_date: $("editDate").value,
+      sale_time: $("editTime").value,
+      item_name: $("editItem").value.trim(),
+      payment_method: $("editPayment").value,
+      amount: Number($("editAmount").value),
+      quantity: Number($("editQuantity").value),
+      comment: $("editComment").value.trim() || null,
+      local_updated_at: new Date().toISOString()
+    };
+
+    if (!payload.sale_date || !payload.sale_time || !payload.item_name) {
+      $("editMessage").textContent = "날짜, 시간, 품목명을 확인하세요.";
+      return;
+    }
+
+    if (!Number.isFinite(payload.amount) || payload.amount <= 0) {
+      $("editMessage").textContent = "금액은 1원 이상이어야 합니다.";
+      return;
+    }
+
+    if (!Number.isInteger(payload.quantity) || payload.quantity <= 0) {
+      $("editMessage").textContent = "수량은 1개 이상이어야 합니다.";
+      return;
+    }
+
+    $("editSave").disabled = true;
+    $("editSave").textContent = "저장 중…";
+    $("editMessage").textContent = "";
+
+    try {
+      const { error } = await client
+        .from("kcem_sales")
+        .update(payload)
+        .eq("transaction_key", transactionKey);
+
+      if (error) throw error;
+
+      closeEdit();
+      await loadYear(true);
+    } catch (error) {
+      $("editMessage").textContent =
+        error?.message || "수정 저장에 실패했습니다.";
+    } finally {
+      $("editSave").disabled = false;
+      $("editSave").textContent = "수정 저장";
+    }
+  }
+
+  async function deleteCurrentSale() {
+    const transactionKey = $("editTransactionKey").value;
+    const row = findTransaction(transactionKey);
+
+    if (!row) return;
+
+    const ok = window.confirm(
+      `${row.sale_date} / ${row.item_name} / ${won(row.amount)}\n\n이 매출내역을 삭제할까요?`
+    );
+
+    if (!ok) return;
+
+    $("deleteSaleBtn").disabled = true;
+    $("editMessage").textContent = "";
+
+    try {
+      const { error } = await client
+        .from("kcem_sales")
+        .delete()
+        .eq("transaction_key", transactionKey);
+
+      if (error) throw error;
+
+      closeEdit();
+      await loadYear(true);
+    } catch (error) {
+      $("editMessage").textContent =
+        error?.message || "삭제에 실패했습니다.";
+    } finally {
+      $("deleteSaleBtn").disabled = false;
+    }
+  }
+
+  function editButtonHtml(row) {
+    return `
+      <button
+        type="button"
+        class="row-edit-btn"
+        data-edit-key="${escapeHtml(row.transaction_key)}"
+        title="이 항목 수정"
+      >수정</button>
+    `;
+  }
+
   function renderDayItems() {
     const rows = [...currentDayRows()].sort((a, b) =>
       String(a.sale_time || "").localeCompare(String(b.sale_time || ""))
@@ -488,10 +696,18 @@
         <td class="center">${Number(row.quantity || 1)}</td>
         <td class="right"><strong>${won(row.amount)}</strong></td>
         <td class="memo">${escapeHtml(row.comment || "")}</td>
+        <td class="center screen-only">${editButtonHtml(row)}</td>
       </tr>
     `).join("");
 
     $("dayItemsEmpty").classList.toggle("hidden", rows.length !== 0);
+
+    $$("#dayItemsRows .row-edit-btn").forEach(button => {
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        openEdit(button.dataset.editKey);
+      });
+    });
   }
 
   function renderDetail() {
@@ -535,6 +751,7 @@
           <td class="right"><strong>${won(row.amount)}</strong></td>
           <td class="center">${Number(row.quantity || 1)}</td>
           <td class="memo">${escapeHtml(row.comment || "")}</td>
+          <td class="center screen-only">${editButtonHtml(row)}</td>
         </tr>
       `;
     }).join("");
@@ -546,6 +763,13 @@
         state.selectedDay = row.dataset.date;
         render();
         window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+
+    $$("#detailRows .row-edit-btn").forEach(button => {
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        openEdit(button.dataset.editKey);
       });
     });
 
@@ -1102,6 +1326,28 @@
     $("prevBtn").addEventListener("click", () => stepPeriod(-1));
     $("nextBtn").addEventListener("click", () => stepPeriod(1));
     $("printBtn").addEventListener("click", printCurrentView);
+
+    $("adminForm").addEventListener("submit", event => {
+      event.preventDefault();
+      adminLogin(
+        $("adminEmail").value.trim(),
+        $("adminPassword").value
+      );
+    });
+
+    $("adminCancel").addEventListener("click", () => {
+      state.pendingEditKey = null;
+      hideAdminLogin();
+    });
+
+    $("editForm").addEventListener("submit", event => {
+      event.preventDefault();
+      saveEdit();
+    });
+
+    $("editCancel").addEventListener("click", closeEdit);
+    $("editClose").addEventListener("click", closeEdit);
+    $("deleteSaleBtn").addEventListener("click", deleteCurrentSale);
 
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden && getToken()) {
