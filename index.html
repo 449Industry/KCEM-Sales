@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#332623" />
-  <title>한국공예체험박물관 운영관리</title>
+  <title>한국공예체험 박물관 EUM</title>
   <link rel="stylesheet" href="./assets/app.css" />
 </head>
 <body>
   <div id="pinOverlay" class="overlay hidden">
     <form id="pinForm" class="pin-card">
-      <div class="pin-label">KCEM OPERATIONS</div>
-      <h1>박물관 운영관리</h1>
+      <div class="pin-label">EUM</div>
+      <h1>한국공예체험 박물관 EUM</h1>
       <p>공용 PIN을 입력하세요. 인증된 기기는 30일 동안 유지됩니다.</p>
       <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password"
              maxlength="32" placeholder="조회 PIN" autofocus />
@@ -20,23 +20,22 @@
     </form>
   </div>
 
-  <header class="topbar">
-    <div class="brand-simple">
-      <span>KCEM</span>
-      <strong>박물관 운영관리</strong>
+  <header class="topbar eum-topbar">
+    <div class="eum-header-left">
+      <div class="brand-simple eum-brand">
+        <span>EUM</span>
+        <strong>한국공예체험 박물관 EUM</strong>
+      </div>
+      <nav class="module-switch" aria-label="박물관 운영 메뉴">
+        <button type="button" class="module-tab active" data-module="sales">매출</button>
+        <button type="button" class="module-tab" data-module="tasks">업무공유</button>
+      </nav>
     </div>
     <div class="top-actions">
       <span id="statusBadge" class="status-badge">연결 준비</span>
       <button id="logoutBtn" class="top-btn hidden">이 기기 인증 해제</button>
     </div>
   </header>
-
-  <nav class="module-nav" aria-label="박물관 운영 메뉴">
-    <div class="module-nav-inner">
-      <button type="button" class="module-tab active" data-module="sales">매출</button>
-      <button type="button" class="module-tab" data-module="tasks">업무공유</button>
-    </div>
-  </nav>
 
   <main id="salesApp" class="shell">
     <section class="control-bar">
@@ -254,42 +253,48 @@
   </main>
 
   <main id="taskApp" class="shell task-shell hidden">
-    <section class="task-hero">
-      <div>
-        <span class="section-kicker">TEAM TASK BOARD</span>
-        <h1>업무공유</h1>
-        <p>해야 할 일을 남기고 담당자를 지정해 모두가 현재 상태를 바로 확인합니다.</p>
+    <section class="task-topline">
+      <div class="task-topline-copy">
+        <strong>업무공유</strong>
+        <span>해야 할 일을 빠르게 남기고, 사람·상태·분류 기준으로 바로 확인합니다.</span>
       </div>
       <div class="task-user-box">
-        <label for="currentMemberSelect">현재 작성자</label>
+        <label for="currentMemberSelect">작성자</label>
         <select id="currentMemberSelect"></select>
         <button id="memberManageBtn" type="button" class="task-outline-btn">팀원관리</button>
       </div>
     </section>
 
-    <section class="task-entry panel">
-      <div class="task-entry-grid">
+    <section class="task-entry panel smart-task-entry">
+      <div class="smart-entry-row">
+        <label class="task-field smart-title-field">
+          <span>업무를 자연어로 입력</span>
+          <input id="taskTitle" type="text"
+                 placeholder="예: 3D 프린트 오행거북이 5종 3개씩 총 15개 광라 담당"
+                 maxlength="200" />
+        </label>
+        <button id="taskAnalyzeBtn" type="button" class="task-analyze-btn">자동분류</button>
+        <button id="taskAddBtn" type="button" class="task-add-btn">업무 등록</button>
+      </div>
+
+      <div id="taskAnalyzePreview" class="task-analyze-preview hidden"></div>
+
+      <div class="task-entry-grid compact-entry-grid">
         <label class="task-field category-field">
           <span>분류</span>
-          <input id="taskCategory" type="text" list="taskCategoryList" placeholder="3D 프린트" maxlength="40" />
+          <input id="taskCategory" type="text" list="taskCategoryList" placeholder="기타" maxlength="40" />
           <datalist id="taskCategoryList">
             <option value="3D 프린트"></option>
             <option value="제작"></option>
             <option value="구매"></option>
-            <option value="박물관"></option>
             <option value="정리"></option>
+            <option value="박물관"></option>
+            <option value="예약"></option>
+            <option value="강사"></option>
+            <option value="우지"></option>
+            <option value="유워시"></option>
             <option value="기타"></option>
           </datalist>
-        </label>
-
-        <label class="task-field task-title-field">
-          <span>업무 내용</span>
-          <input id="taskTitle" type="text" placeholder="오행거북이 5종 3개씩 필요" maxlength="160" />
-        </label>
-
-        <label class="task-field quantity-field">
-          <span>수량</span>
-          <input id="taskQuantity" type="number" min="1" step="1" placeholder="15" />
         </label>
 
         <label class="task-field assignee-field">
@@ -297,19 +302,68 @@
           <select id="taskAssignee"></select>
         </label>
 
-        <button id="taskAddBtn" type="button" class="task-add-btn">업무 등록</button>
+        <label class="task-field quantity-field">
+          <span>수량 <em>선택</em></span>
+          <input id="taskQuantity" type="number" min="1" step="1" placeholder="15" />
+        </label>
 
         <label class="task-field detail-field">
           <span>상세 메모 <em>선택</em></span>
-          <input id="taskDescription" type="text" placeholder="예: 5종 각각 3개 / 출력 후 2층 전달" maxlength="500" />
+          <input id="taskDescription" type="text" placeholder="추가 설명이 필요할 때만 입력" maxlength="500" />
         </label>
       </div>
       <div id="taskEntryMessage" class="task-entry-message"></div>
     </section>
 
-    <section class="task-filter-panel">
+    <section class="task-filter-panel task-power-filter">
       <div id="memberTabs" class="member-tabs"></div>
-      <div class="task-filter-actions">
+
+      <div class="task-filter-grid">
+        <label class="task-filter-field search-filter">
+          <span>검색</span>
+          <input id="taskSearch" type="search" placeholder="업무·메모·담당자 검색" />
+        </label>
+
+        <label class="task-filter-field">
+          <span>상태</span>
+          <select id="taskStatusFilter">
+            <option value="ALL">전체</option>
+            <option value="REQUESTED">요청</option>
+            <option value="IN_PROGRESS">진행중</option>
+            <option value="DONE">완료</option>
+          </select>
+        </label>
+
+        <label class="task-filter-field">
+          <span>분류</span>
+          <select id="taskCategoryFilter">
+            <option value="ALL">전체</option>
+          </select>
+        </label>
+
+        <label class="task-filter-field">
+          <span>보기</span>
+          <select id="taskGroupMode">
+            <option value="STATUS">상태별</option>
+            <option value="ASSIGNEE">담당자별</option>
+            <option value="CATEGORY">분류별</option>
+            <option value="LIST">전체목록</option>
+          </select>
+        </label>
+
+        <label class="task-filter-field">
+          <span>정렬</span>
+          <select id="taskSortMode">
+            <option value="NEWEST">최근 등록순</option>
+            <option value="OLDEST">오래된 순</option>
+            <option value="STATUS">상태순</option>
+            <option value="ASSIGNEE">담당자순</option>
+            <option value="CATEGORY">분류순</option>
+            <option value="QTY_DESC">수량 많은 순</option>
+          </select>
+        </label>
+
+        <button id="taskFilterResetBtn" type="button" class="task-mini-btn filter-reset-btn">초기화</button>
         <button id="taskRefreshBtn" type="button" class="task-mini-btn">새로고침</button>
       </div>
     </section>
@@ -319,38 +373,13 @@
       <span>ZIP의 <code>supabase/KCEM_TASK_SHARE_SETUP_v1.4.0.sql</code>을 Supabase SQL Editor에서 한 번 실행하세요.</span>
     </section>
 
-    <section id="taskBoard" class="task-board">
-      <div class="task-column requested-column">
-        <div class="task-column-head">
-          <div><span class="task-status-dot"></span><strong>요청</strong></div>
-          <span id="requestedCount" class="task-count">0</span>
-        </div>
-        <div id="requestedTasks" class="task-card-list"></div>
-      </div>
-
-      <div class="task-column progress-column">
-        <div class="task-column-head">
-          <div><span class="task-status-dot"></span><strong>진행중</strong></div>
-          <span id="progressCount" class="task-count">0</span>
-        </div>
-        <div id="progressTasks" class="task-card-list"></div>
-      </div>
-
-      <div class="task-column done-column">
-        <div class="task-column-head">
-          <div><span class="task-status-dot"></span><strong>완료</strong></div>
-          <span id="doneCount" class="task-count">0</span>
-        </div>
-        <div id="doneTasks" class="task-card-list"></div>
-      </div>
-    </section>
+    <section id="taskBoard" class="task-board dynamic-task-board"></section>
 
     <div class="foot-status task-foot-status">
       <span id="taskLastUpdated">마지막 갱신: -</span>
-      <span>공용 PIN · 팀원 선택 방식</span>
+      <span id="taskVisibleSummary">업무 0건</span>
     </div>
   </main>
-
 
   <div id="memberOverlay" class="overlay hidden">
     <div class="task-modal member-modal">
