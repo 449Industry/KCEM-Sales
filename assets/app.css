@@ -1805,3 +1805,154 @@ tbody tr.selected-day-row td:first-child {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ============================================================
+   v1.5.1 — person-first task navigation
+   ============================================================ */
+
+.eum-brand > span {
+  display: none !important;
+}
+
+.eum-brand strong {
+  font-size: 20px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.75px !important;
+}
+
+.eum-brand strong em {
+  margin-left: 4px;
+  color: var(--red);
+  font-style: normal;
+  font-weight: 950;
+  letter-spacing: -0.25px;
+}
+
+.eum-login-title {
+  margin: 4px 0 8px !important;
+  font-size: 23px !important;
+  text-align: center;
+}
+
+.eum-login-title span {
+  color: var(--red);
+}
+
+.task-person-topline {
+  min-height: 54px;
+  padding: 6px 9px 6px 14px !important;
+}
+
+.task-primary-nav {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.task-primary-nav > strong {
+  flex: 0 0 auto;
+  font-size: 17px;
+  letter-spacing: -0.45px;
+}
+
+.primary-member-tabs {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 2px 1px;
+  scrollbar-width: thin;
+}
+
+.primary-member-tabs .member-tab {
+  min-height: 34px;
+  padding: 0 13px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.primary-member-tabs .member-tab.active {
+  color: #fff;
+  border-color: var(--brown);
+  background: var(--brown);
+}
+
+.task-person-topline > .task-outline-btn {
+  flex: 0 0 auto;
+}
+
+.task-power-filter {
+  padding: 7px 8px !important;
+}
+
+.task-power-filter .task-filter-grid {
+  width: 100%;
+  grid-template-columns:
+    minmax(190px, 1.8fr)
+    100px
+    120px
+    110px
+    125px
+    64px
+    74px;
+}
+
+.task-assignee-only {
+  justify-content: flex-start !important;
+}
+
+.task-assignee-only span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.task-assignee-only strong {
+  color: var(--red-dark);
+}
+
+@media (max-width: 900px) {
+  .eum-brand strong {
+    font-size: 17px !important;
+  }
+
+  .task-primary-nav {
+    gap: 8px;
+  }
+
+  .task-primary-nav > strong {
+    font-size: 15px;
+  }
+
+  .task-power-filter .task-filter-grid {
+    grid-template-columns: minmax(150px, 1fr) repeat(4, minmax(92px, .65fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .eum-brand strong {
+    font-size: 15px !important;
+  }
+
+  .task-person-topline {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .task-primary-nav {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .primary-member-tabs {
+    width: 100%;
+  }
+
+  .task-person-topline > .task-outline-btn {
+    width: 100%;
+  }
+}

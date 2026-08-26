@@ -4,7 +4,6 @@
   const $$ = sel => Array.from(document.querySelectorAll(sel));
 
   const TOKEN_KEY = "kcem_public_access_token";
-  const CURRENT_MEMBER_KEY = "kcem_current_team_member";
   const MODULE_KEY = "kcem_current_module";
   const FILTER_KEY = "kcem_task_filters_v150";
 
@@ -12,7 +11,6 @@
   let allMembers = [];
   let activeMembers = [];
   let tasks = [];
-  let currentMemberId = localStorage.getItem(CURRENT_MEMBER_KEY) || "";
   let selectedMemberId = "ALL";
   let pollTimer = null;
   let taskApiReady = true;
@@ -84,34 +82,34 @@
     return allMembers.find(m => m.member_id === id)?.member_name || "-";
   }
 
-  function ensureCurrentMember() {
-    if (currentMemberId && activeMembers.some(m => m.member_id === currentMemberId)) return;
-
-    currentMemberId = activeMembers[0]?.member_id || "";
-
-    if (currentMemberId) {
-      localStorage.setItem(CURRENT_MEMBER_KEY, currentMemberId);
-    } else {
-      localStorage.removeItem(CURRENT_MEMBER_KEY);
+  function defaultAssigneeId() {
+    if (
+      selectedMemberId !== "ALL" &&
+      activeMembers.some(m => m.member_id === selectedMemberId)
+    ) {
+      return selectedMemberId;
     }
+
+    const currentValue = $("taskAssignee")?.value || "";
+    if (activeMembers.some(m => m.member_id === currentValue)) {
+      return currentValue;
+    }
+
+    return activeMembers[0]?.member_id || "";
   }
 
   function renderMemberControls() {
-    ensureCurrentMember();
-
-    const current = $("currentMemberSelect");
     const assignee = $("taskAssignee");
 
     if (!activeMembers.length) {
-      current.innerHTML = '<option value="">팀원 없음</option>';
       assignee.innerHTML = '<option value="">팀원 없음</option>';
     } else {
-      current.innerHTML = activeMemberOptions(currentMemberId);
-      assignee.innerHTML = activeMemberOptions(
-        activeMembers.some(m => m.member_id === assignee.value)
-          ? assignee.value
-          : currentMemberId
-      );
+      const preferred = defaultAssigneeId();
+      assignee.innerHTML = activeMemberOptions(preferred);
+
+      if (preferred) {
+        assignee.value = preferred;
+      }
     }
 
     const tabs = [
@@ -126,10 +124,40 @@
     $$(".member-tab").forEach(btn => {
       btn.addEventListener("click", () => {
         selectedMemberId = btn.dataset.member;
+
+        // 사람 선택이 가장 중요한 1차 분류.
+        // 특정 사람 탭에서는 신규 업무의 담당자도 그 사람으로 자동 지정한다.
+        if (
+          selectedMemberId !== "ALL" &&
+          activeMembers.some(m => m.member_id === selectedMemberId)
+        ) {
+          $("taskAssignee").value = selectedMemberId;
+        }
+
         renderMemberControls();
         renderBoard();
       });
     });
+  }
+
+  function actorMemberId(task = null) {
+    if (task?.assigned_to && allMembers.some(m => m.member_id === task.assigned_to)) {
+      return task.assigned_to;
+    }
+
+    if (
+      selectedMemberId !== "ALL" &&
+      allMembers.some(m => m.member_id === selectedMemberId)
+    ) {
+      return selectedMemberId;
+    }
+
+    const selectedAssignee = $("taskAssignee")?.value || "";
+    if (selectedAssignee && allMembers.some(m => m.member_id === selectedAssignee)) {
+      return selectedAssignee;
+    }
+
+    return activeMembers[0]?.member_id || "";
   }
 
   function statusLabel(status) {
@@ -323,9 +351,7 @@
           ? `<p class="task-desc">${escapeHtml(task.description)}</p>`
           : ""}
 
-        <div class="task-people">
-          <span><em>요청</em>${escapeHtml(task.requested_name || "-")}</span>
-          <span class="task-arrow">→</span>
+        <div class="task-people task-assignee-only">
           <span><em>담당</em><strong>${escapeHtml(task.assigned_name || "-")}</strong></span>
         </div>
 
@@ -592,13 +618,16 @@
       }
     }
 
-    // "내가 / 내가할게 / 나" => current writer
-    if (/(내가|제가|내\s*담당|내가\s*할|내가\s*해)/.test(text)) {
-      return currentMemberId;
+    // 특정 사람 탭을 보고 있다면 그 사람이 가장 강한 기본 담당자다.
+    if (
+      selectedMemberId !== "ALL" &&
+      activeMembers.some(m => m.member_id === selectedMemberId)
+    ) {
+      return selectedMemberId;
     }
 
-    // Keep currently selected assignee when no clue is found.
-    return $("taskAssignee").value || currentMemberId;
+    // 문장에 담당자 단서가 없으면 현재 등록폼 담당자를 유지한다.
+    return $("taskAssignee").value || activeMembers[0]?.member_id || "";
   }
 
   function detectQuantity(text) {
@@ -689,11 +718,6 @@
     const quantity = quantityText ? Number(quantityText) : null;
     const assigned = $("taskAssignee").value;
 
-    if (!currentMemberId) {
-      $("taskEntryMessage").textContent = "현재 작성자를 선택하세요.";
-      return;
-    }
-
     if (!assigned) {
       $("taskEntryMessage").textContent = "담당자를 선택하세요.";
       return;
@@ -715,7 +739,9 @@
         p_title: title,
         p_description: description || null,
         p_quantity: quantity,
-        p_requested_by: currentMemberId,
+        // 작성자 개념은 UI에서 사용하지 않는다.
+        // 기존 DB/RPC 호환을 위해 requested_by에는 담당자를 기록한다.
+        p_requested_by: assigned,
         p_assigned_to: assigned
       });
 
@@ -740,14 +766,16 @@
   }
 
   async function changeStatus(taskId, status) {
-    if (!currentMemberId) return;
+    const task = tasks.find(t => t.task_id === taskId);
+    const actor = actorMemberId(task);
+    if (!actor) return;
 
     try {
       const { error } = await client.rpc("kcem_tasks_set_status", {
         p_token: token(),
         p_task_id: taskId,
         p_status: status,
-        p_actor_member_id: currentMemberId
+        p_actor_member_id: actor
       });
 
       if (error) throw error;
@@ -766,7 +794,6 @@
     $("taskEditTitle").value = task.title || "";
     $("taskEditDescription").value = task.description || "";
     $("taskEditQuantity").value = task.quantity || "";
-    $("taskEditRequester").innerHTML = allMemberOptions(task.requested_by);
     $("taskEditAssignee").innerHTML = allMemberOptions(task.assigned_to);
     $("taskEditStatus").value = task.status;
     $("taskEditMessage").textContent = "";
@@ -796,6 +823,10 @@
     try {
       $("taskEditSaveBtn").disabled = true;
 
+      const originalTask = tasks.find(t => t.task_id === id);
+      const assignedTo = $("taskEditAssignee").value;
+      const actor = assignedTo || actorMemberId(originalTask);
+
       const { error } = await client.rpc("kcem_tasks_update", {
         p_token: token(),
         p_task_id: id,
@@ -803,10 +834,11 @@
         p_title: title,
         p_description: $("taskEditDescription").value.trim() || null,
         p_quantity: qty,
-        p_requested_by: $("taskEditRequester").value,
-        p_assigned_to: $("taskEditAssignee").value,
+        // 작성자는 화면에 노출하지 않는다. 기존 값이 있으면 보존한다.
+        p_requested_by: originalTask?.requested_by || assignedTo,
+        p_assigned_to: assignedTo,
         p_status: $("taskEditStatus").value,
-        p_actor_member_id: currentMemberId
+        p_actor_member_id: actor
       });
 
       if (error) throw error;
@@ -830,7 +862,7 @@
       const { error } = await client.rpc("kcem_tasks_delete", {
         p_token: token(),
         p_task_id: id,
-        p_actor_member_id: currentMemberId
+        p_actor_member_id: actorMemberId(task)
       });
 
       if (error) throw error;
@@ -979,15 +1011,6 @@
         setModule(btn.dataset.module)
       )
     );
-
-    $("currentMemberSelect").addEventListener("change", e => {
-      currentMemberId = e.target.value;
-      localStorage.setItem(CURRENT_MEMBER_KEY, currentMemberId);
-
-      if (currentMemberId) {
-        $("taskAssignee").value = currentMemberId;
-      }
-    });
 
     $("taskAnalyzeBtn").addEventListener("click", () =>
       analyzeNaturalTask(true)

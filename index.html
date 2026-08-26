@@ -4,14 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#332623" />
-  <title>한국공예체험 박물관 EUM</title>
+  <title>한국공예체험박물관 EUM</title>
   <link rel="stylesheet" href="./assets/app.css" />
 </head>
 <body>
   <div id="pinOverlay" class="overlay hidden">
     <form id="pinForm" class="pin-card">
-      <div class="pin-label">EUM</div>
-      <h1>한국공예체험 박물관 EUM</h1>
+      <h1 class="eum-login-title">한국공예체험박물관 <span>EUM</span></h1>
       <p>공용 PIN을 입력하세요. 인증된 기기는 30일 동안 유지됩니다.</p>
       <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password"
              maxlength="32" placeholder="조회 PIN" autofocus />
@@ -23,8 +22,7 @@
   <header class="topbar eum-topbar">
     <div class="eum-header-left">
       <div class="brand-simple eum-brand">
-        <span>EUM</span>
-        <strong>한국공예체험 박물관 EUM</strong>
+        <strong>한국공예체험박물관 <em>EUM</em></strong>
       </div>
       <nav class="module-switch" aria-label="박물관 운영 메뉴">
         <button type="button" class="module-tab active" data-module="sales">매출</button>
@@ -253,16 +251,12 @@
   </main>
 
   <main id="taskApp" class="shell task-shell hidden">
-    <section class="task-topline">
-      <div class="task-topline-copy">
+    <section class="task-topline task-person-topline">
+      <div class="task-primary-nav">
         <strong>업무공유</strong>
-        <span>해야 할 일을 빠르게 남기고, 사람·상태·분류 기준으로 바로 확인합니다.</span>
+        <div id="memberTabs" class="member-tabs primary-member-tabs"></div>
       </div>
-      <div class="task-user-box">
-        <label for="currentMemberSelect">작성자</label>
-        <select id="currentMemberSelect"></select>
-        <button id="memberManageBtn" type="button" class="task-outline-btn">팀원관리</button>
-      </div>
+      <button id="memberManageBtn" type="button" class="task-outline-btn">팀원관리</button>
     </section>
 
     <section class="task-entry panel smart-task-entry">
@@ -316,8 +310,6 @@
     </section>
 
     <section class="task-filter-panel task-power-filter">
-      <div id="memberTabs" class="member-tabs"></div>
-
       <div class="task-filter-grid">
         <label class="task-filter-field search-filter">
           <span>검색</span>
@@ -429,11 +421,7 @@
           <span>상세 메모</span>
           <textarea id="taskEditDescription" rows="3" maxlength="500"></textarea>
         </label>
-        <label class="task-field">
-          <span>요청자</span>
-          <select id="taskEditRequester"></select>
-        </label>
-        <label class="task-field">
+        <label class="task-field span-2">
           <span>담당자</span>
           <select id="taskEditAssignee"></select>
         </label>
