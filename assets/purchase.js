@@ -2,6 +2,7 @@
   const cfg = window.KCEM_CONFIG || {};
   const TABLE = "shared_purchase_requests";
   const THIS_SITE = "KCEM";
+  const TOKEN_KEY = "kcem_public_access_token";
   const POLL_MS = Math.max(5000, Number(cfg.POLL_INTERVAL_MS || 5000));
 
   const $ = id => document.getElementById(id);
@@ -14,21 +15,54 @@
   };
 
   const ALIASES = {
-    id: ["id", "request_id", "purchase_request_id", "uuid"],
-    source: ["source_site"],
-    status: ["status"],
-    priority: ["priority"],
-    requestDate: ["request_date", "requested_date", "request_day", "date"],
+    id: [
+      "id", "request_id", "purchase_request_id", "purchase_id",
+      "shared_purchase_id", "uuid"
+    ],
+    source: [
+      "source_site", "site", "source", "origin_site", "request_site"
+    ],
+    status: [
+      "status", "request_status", "purchase_status"
+    ],
+    priority: [
+      "priority", "priority_level", "urgency", "priority_no"
+    ],
+    requestDate: [
+      "request_date", "requested_date", "request_day", "requested_at",
+      "request_at", "date_requested", "request_dt", "date"
+    ],
     content: [
       "item_name", "request_text", "request_content", "item_request",
-      "item", "title", "content", "request_item", "description"
+      "item", "title", "content", "request_item", "description",
+      "item_text", "request_name", "purchase_item", "purchase_content",
+      "item_content", "request_description", "request_detail",
+      "request_details", "item_description", "product_name", "product",
+      "name"
     ],
-    quantity: ["quantity", "qty", "request_quantity"],
-    amount: ["expected_amount", "estimated_amount", "expected_price", "amount", "budget"],
-    memo: ["memo", "note", "notes", "comment", "remarks"],
-    createdAt: ["created_at"],
-    updatedAt: ["updated_at"],
-    completedAt: ["completed_at"]
+    quantity: [
+      "quantity", "qty", "request_quantity", "quantity_text",
+      "qty_text", "request_qty", "count", "amount_qty"
+    ],
+    amount: [
+      "expected_amount", "estimated_amount", "expected_price",
+      "estimated_price", "estimate_amount", "estimate_price",
+      "estimated_cost", "expected_cost", "cost", "price",
+      "budget", "amount"
+    ],
+    memo: [
+      "memo", "note", "notes", "comment", "comments", "remarks",
+      "remark", "detail_memo", "request_memo", "memo_text"
+    ],
+    createdAt: [
+      "created_at", "created_on", "inserted_at", "created"
+    ],
+    updatedAt: [
+      "updated_at", "local_updated_at", "modified_at", "updated"
+    ],
+    completedAt: [
+      "completed_at", "purchased_at", "done_at", "finished_at"
+    ]
   };
 
   const FALLBACK = {
@@ -61,9 +95,18 @@
   }[ch]));
 
   const won = value => {
-    const n = Number(value || 0);
-    return n ? `${n.toLocaleString("ko-KR")}원` : "-";
+    if (value == null || value === "") return "-";
+    const n = Number(String(value).replace(/[^\d.-]/g, ""));
+    if (Number.isFinite(n) && n !== 0) {
+      return `${n.toLocaleString("ko-KR")}원`;
+    }
+    if (Number.isFinite(n) && n === 0) return "-";
+    return escapeHtml(String(value));
   };
+
+  function publicToken() {
+    return localStorage.getItem(TOKEN_KEY) || "";
+  }
 
   function todayKst() {
     const parts = new Intl.DateTimeFormat("en-US", {
@@ -137,35 +180,175 @@
     }
   }
 
+  function looksLikeDate(value) {
+    if (value == null) return false;
+    const s = String(value);
+    return /^\d{4}-\d{2}-\d{2}(?:[T\s].*)?$/.test(s);
+  }
+
+  function keyScore(key, words) {
+    const k = String(key || "").toLowerCase();
+    let score = 0;
+    for (const word of words) {
+      if (k === word) score += 100;
+      else if (k.includes(word)) score += 10;
+    }
+    return score;
+  }
+
+  function inferColumnFromRow(row, logicalKey) {
+    if (!row || typeof row !== "object") return null;
+
+    const keys = Object.keys(row);
+    const excluded = new Set([
+      columnMap.id, columnMap.source, columnMap.status, columnMap.priority,
+      columnMap.createdAt, columnMap.updatedAt, columnMap.completedAt
+    ].filter(Boolean));
+
+    const specs = {
+      requestDate: ["request_date", "requested", "request", "date", "day"],
+      content: ["item", "request", "content", "title", "product", "name", "description", "text"],
+      quantity: ["quantity", "qty", "count", "unit"],
+      amount: ["amount", "price", "cost", "estimate", "estimated", "expected", "budget"],
+      memo: ["memo", "note", "comment", "remark", "detail"]
+    };
+
+    let candidates = keys
+      .filter(k => !excluded.has(k))
+      .map(k => ({
+        key: k,
+        value: row[k],
+        score: keyScore(k, specs[logicalKey] || [])
+      }));
+
+    if (logicalKey === "requestDate") {
+      candidates = candidates
+        .filter(x => looksLikeDate(x.value))
+        .map(x => ({
+          ...x,
+          score: x.score
+            + (/request|requested/i.test(x.key) ? 50 : 0)
+            - (/created|updated|completed|finished|done/i.test(x.key) ? 60 : 0)
+        }));
+    }
+
+    if (logicalKey === "content") {
+      candidates = candidates
+        .filter(x =>
+          typeof x.value === "string" &&
+          x.value.trim() &&
+          !looksLikeDate(x.value) &&
+          !/^(UWASH|OOZY|KCEM|pending|completed)$/i.test(x.value.trim())
+        )
+        .map(x => ({
+          ...x,
+          score: x.score
+            + Math.min(30, String(x.value).trim().length / 3)
+            - (/memo|note|comment|remark/i.test(x.key) ? 40 : 0)
+            - (/source|site|status/i.test(x.key) ? 100 : 0)
+        }));
+    }
+
+    if (logicalKey === "quantity") {
+      candidates = candidates
+        .filter(x =>
+          x.value != null &&
+          String(x.value).trim() !== "" &&
+          !looksLikeDate(x.value)
+        )
+        .map(x => ({
+          ...x,
+          score: x.score
+            - (/priority/i.test(x.key) ? 100 : 0)
+            - (/amount|price|cost/i.test(x.key) ? 50 : 0)
+        }));
+    }
+
+    if (logicalKey === "amount") {
+      candidates = candidates
+        .filter(x =>
+          x.value != null &&
+          String(x.value).trim() !== "" &&
+          !Number.isNaN(Number(String(x.value).replace(/,/g, "")))
+        )
+        .map(x => ({
+          ...x,
+          score: x.score
+            - (/priority|quantity|qty|count/i.test(x.key) ? 100 : 0)
+        }));
+    }
+
+    if (logicalKey === "memo") {
+      candidates = candidates
+        .filter(x =>
+          typeof x.value === "string" &&
+          x.value.trim() &&
+          !looksLikeDate(x.value)
+        )
+        .map(x => ({
+          ...x,
+          score: x.score
+            - (/item|product|title|content/i.test(x.key) ? 25 : 0)
+        }));
+    }
+
+    candidates.sort((a, b) => b.score - a.score);
+    return candidates.length && candidates[0].score > 0
+      ? candidates[0].key
+      : null;
+  }
+
+  function improveMapFromRows(data) {
+    if (!Array.isArray(data) || !data.length) return;
+
+    const sampleRows = data.slice(0, 10);
+    const keys = new Set();
+    sampleRows.forEach(row =>
+      Object.keys(row || {}).forEach(k => keys.add(k))
+    );
+
+    applyColumnMap([...keys]);
+
+    const logicalKeys = ["requestDate", "content", "quantity", "amount", "memo"];
+
+    for (const logicalKey of logicalKeys) {
+      const mapped = columnMap[logicalKey];
+      const mappedActuallyExists = [...keys].includes(mapped);
+
+      if (!mappedActuallyExists) {
+        let best = null;
+        const votes = new Map();
+
+        for (const row of sampleRows) {
+          const inferred = inferColumnFromRow(row, logicalKey);
+          if (inferred) {
+            votes.set(inferred, (votes.get(inferred) || 0) + 1);
+          }
+        }
+
+        if (votes.size) {
+          best = [...votes.entries()]
+            .sort((a, b) => b[1] - a[1])[0][0];
+        }
+
+        if (best) columnMap[logicalKey] = best;
+      }
+    }
+
+    console.info("[KCEM shared_purchase_requests] detected columns", {
+      available: [...keys],
+      map: { ...columnMap }
+    });
+  }
+
   async function discoverSchema() {
-    try {
-      const res = await fetch(`${cfg.SUPABASE_URL}/rest/v1/`, {
-        headers: {
-          apikey: cfg.SUPABASE_PUBLISHABLE_KEY,
-          Accept: "application/openapi+json"
-        }
-      });
-
-      if (res.ok) {
-        const spec = await res.json();
-        const props =
-          spec?.definitions?.[TABLE]?.properties ||
-          spec?.components?.schemas?.[TABLE]?.properties ||
-          null;
-
-        if (props) {
-          applyColumnMap(Object.keys(props));
-          return;
-        }
-      }
-    } catch (_) {}
-
-    try {
-      const { data } = await client.from(TABLE).select("*").limit(1);
-      if (Array.isArray(data) && data[0]) {
-        applyColumnMap(Object.keys(data[0]));
-      }
-    } catch (_) {}
+    // v1.7.2부터 브라우저는 shared_purchase_requests에 직접 접근하지 않습니다.
+    // 서버 RPC가 실제 컬럼명을 감지해 표준 JSON으로 반환합니다.
+    applyColumnMap([
+      "id", "source_site", "status", "priority", "request_date",
+      "content", "quantity", "expected_amount", "memo",
+      "created_at", "updated_at", "completed_at"
+    ]);
   }
 
   function readRaw(row, key) {
@@ -175,6 +358,12 @@
     for (const alias of ALIASES[key] || []) {
       if (row && alias in row) return row[alias];
     }
+
+    if (["requestDate", "content", "quantity", "amount", "memo"].includes(key)) {
+      const inferred = inferColumnFromRow(row, key);
+      if (inferred && inferred in row) return row[inferred];
+    }
+
     return null;
   }
 
@@ -188,7 +377,12 @@
       requestDate: readRaw(row, "requestDate") || "",
       content: readRaw(row, "content") || "",
       quantity: readRaw(row, "quantity") ?? "",
-      amount: readRaw(row, "amount") ?? null,
+      amount: (() => {
+        const value = readRaw(row, "amount");
+        if (value == null || value === "") return null;
+        const parsed = Number(String(value).replace(/[^\d.-]/g, ""));
+        return Number.isFinite(parsed) ? parsed : value;
+      })(),
       memo: readRaw(row, "memo") || "",
       createdAt: readRaw(row, "createdAt"),
       updatedAt: readRaw(row, "updatedAt"),
@@ -381,15 +575,39 @@
   async function loadRows() {
     if (!client) await initClient();
 
+    if (!publicToken()) {
+      message("공용 PIN 인증 토큰이 없습니다. 페이지를 새로고침해 다시 인증하세요.", true);
+      return;
+    }
+
     try {
-      const { data, error } = await client.from(TABLE).select("*");
+      const { data, error } = await client.rpc("kcem_shared_purchase_list", {
+        p_token: publicToken()
+      });
+
       if (error) throw error;
 
-      if ((!schemaColumns.size) && Array.isArray(data) && data[0]) {
-        applyColumnMap(Object.keys(data[0]));
-      }
+      rows = (Array.isArray(data) ? data : []).map(row => ({
+        raw: row,
+        id: row.id,
+        source: String(row.source_site || "").toUpperCase(),
+        status: String(row.status || "pending").toLowerCase(),
+        priority: Math.max(1, Math.min(5, Number(row.priority || 3))),
+        requestDate: row.request_date || "",
+        content: row.content || "",
+        quantity: row.quantity ?? "",
+        amount: (() => {
+          const value = row.expected_amount;
+          if (value == null || value === "") return null;
+          const parsed = Number(String(value).replace(/[^\d.-]/g, ""));
+          return Number.isFinite(parsed) ? parsed : value;
+        })(),
+        memo: row.memo || "",
+        createdAt: row.created_at || null,
+        updatedAt: row.updated_at || null,
+        completedAt: row.completed_at || null
+      }));
 
-      rows = (Array.isArray(data) ? data : []).map(normalize);
       render();
 
       $("purchaseLastUpdated").textContent =
@@ -402,26 +620,31 @@
 
       message("");
     } catch (error) {
-      console.error("shared purchase load error", error);
-      message(
-        `공동 구매요청을 불러오지 못했습니다: ${error?.message || error}`,
-        true
-      );
+      console.error("shared purchase RPC load error", error);
+      const text = String(error?.message || error || "");
+
+      if (text.includes("Could not find the function") || text.includes("PGRST202")) {
+        message(
+          "공동구매 RPC 설치가 필요합니다. KCEM_SHARED_PURCHASE_RPC_v1.7.2.sql을 Supabase에서 한 번 실행하세요.",
+          true
+        );
+      } else {
+        message(`공동 구매요청을 불러오지 못했습니다: ${text}`, true);
+      }
     }
   }
 
   async function insertRequest(values) {
-    const payload = {};
-    setField(payload, "source", THIS_SITE);
-    setField(payload, "status", "pending");
-    setField(payload, "priority", values.priority);
-    setField(payload, "requestDate", values.requestDate);
-    setField(payload, "content", values.content);
-    setField(payload, "quantity", values.quantity || null, { skipUnknown: true });
-    setField(payload, "amount", values.amount ?? null, { skipUnknown: true });
-    setField(payload, "memo", values.memo || null, { skipUnknown: true });
+    const { error } = await client.rpc("kcem_shared_purchase_create", {
+      p_token: publicToken(),
+      p_request_date: values.requestDate,
+      p_priority: values.priority,
+      p_content: values.content,
+      p_quantity: values.quantity || null,
+      p_expected_amount: values.amount ?? null,
+      p_memo: values.memo || null
+    });
 
-    const { error } = await client.from(TABLE).insert(payload);
     if (error) throw error;
   }
 
@@ -534,28 +757,21 @@
       return;
     }
 
-    const payload = {};
-    setField(payload, "requestDate", $("purchaseEditDate").value || todayKst());
-    setField(payload, "priority", editPriority);
-    setField(payload, "content", content);
-    setField(payload, "quantity", $("purchaseEditQuantity").value.trim() || null, { skipUnknown: true });
-    setField(
-      payload,
-      "amount",
-      $("purchaseEditAmount").value ? Number($("purchaseEditAmount").value) : null,
-      { skipUnknown: true }
-    );
-    setField(payload, "memo", $("purchaseEditMemo").value.trim() || null, { skipUnknown: true });
-
     try {
       $("purchaseEditSave").disabled = true;
 
-      const idCol = columnMap.id || FALLBACK.id;
-      const { error } = await client
-        .from(TABLE)
-        .update(payload)
-        .eq(idCol, row.id)
-        .eq(columnMap.source || FALLBACK.source, THIS_SITE);
+      const { error } = await client.rpc("kcem_shared_purchase_update", {
+        p_token: publicToken(),
+        p_id: String(row.id),
+        p_request_date: $("purchaseEditDate").value || todayKst(),
+        p_priority: editPriority,
+        p_content: content,
+        p_quantity: $("purchaseEditQuantity").value.trim() || null,
+        p_expected_amount: $("purchaseEditAmount").value
+          ? Number($("purchaseEditAmount").value)
+          : null,
+        p_memo: $("purchaseEditMemo").value.trim() || null
+      });
 
       if (error) throw error;
 
@@ -576,13 +792,13 @@
     if (!confirm(`'${row.content}' 요청을 삭제할까요?`)) return;
 
     try {
-      const { error } = await client
-        .from(TABLE)
-        .delete()
-        .eq(columnMap.id || FALLBACK.id, row.id)
-        .eq(columnMap.source || FALLBACK.source, THIS_SITE);
+      const { error } = await client.rpc("kcem_shared_purchase_delete", {
+        p_token: publicToken(),
+        p_id: String(row.id)
+      });
 
       if (error) throw error;
+      closeEdit();
       await loadRows();
     } catch (error) {
       message(error?.message || "삭제에 실패했습니다.", true);
@@ -593,19 +809,12 @@
     const row = findRow(id);
     if (!row) return;
 
-    const payload = {};
-    setField(payload, "status", nextStatus);
-
-    if (columnMap.completedAt && (!schemaColumns.size || schemaColumns.has(columnMap.completedAt))) {
-      payload[columnMap.completedAt] =
-        nextStatus === "completed" ? new Date().toISOString() : null;
-    }
-
     try {
-      const { error } = await client
-        .from(TABLE)
-        .update(payload)
-        .eq(columnMap.id || FALLBACK.id, row.id);
+      const { error } = await client.rpc("kcem_shared_purchase_set_status", {
+        p_token: publicToken(),
+        p_id: String(row.id),
+        p_status: nextStatus
+      });
 
       if (error) throw error;
       await loadRows();

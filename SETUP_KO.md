@@ -565,3 +565,58 @@ https://449industry.github.io/UWash-Sales/
 - completed_at
 
 DB 생성 SQL이나 ALTER TABLE은 포함하지 않습니다.
+
+
+---
+
+# v1.7.1 — 기존 공동구매 데이터 읽기 보강
+
+v1.7.0에서 `shared_purchase_requests`의 실제 컬럼명이 예상 이름과 다를 경우
+행은 조회되지만 품목/수량/금액/메모가 빈칸으로 표시될 수 있었습니다.
+
+v1.7.1 개선:
+- 기존 UWash 테이블 컬럼명 후보 대폭 확대
+- 실제 조회된 행의 key를 기반으로 컬럼 자동 감지
+- 컬럼 이름에 item/request/content/title/product 등이 들어가면 품목 후보로 판별
+- quantity/qty/count → 수량 후보
+- amount/price/cost/estimated/expected/budget → 예상금액 후보
+- memo/note/comment/remark → 메모 후보
+- request/date → 요청일 후보
+- 첫 10개 기존 행을 비교해 가장 일관된 컬럼을 사용
+- 브라우저 개발자 콘솔에 실제 감지된 컬럼과 매핑을 출력
+
+DB 생성/ALTER/마이그레이션은 없습니다.
+기존 `public.shared_purchase_requests`만 사용합니다.
+
+
+---
+
+# v1.7.2 — 공동구매 permission denied 수정
+
+오류:
+`permission denied for table shared_purchase_requests`
+
+원인:
+KCEM 공용 PIN은 Supabase Auth 로그인 세션이 아니므로 브라우저의 직접 테이블 접근은 anon 역할로 처리됩니다.
+
+해결:
+- shared_purchase_requests 직접 SELECT/INSERT/UPDATE/DELETE 제거
+- KCEM 공용 PIN 토큰 검증 RPC 방식으로 변경
+- 테이블 권한/RLS는 그대로 유지
+- 새 테이블 없음
+- shared_purchase_requests ALTER 없음
+
+Supabase SQL Editor에서 1회 실행:
+`supabase/KCEM_SHARED_PURCHASE_RPC_v1.7.2.sql`
+
+RPC:
+- kcem_shared_purchase_list
+- kcem_shared_purchase_create
+- kcem_shared_purchase_update
+- kcem_shared_purchase_delete
+- kcem_shared_purchase_set_status
+
+소유권:
+- KCEM 요청만 내용 수정/삭제
+- UWASH/OOZY 요청은 내용 조회만
+- 구매완료/완료취소(status 변경)는 모든 출처 가능
