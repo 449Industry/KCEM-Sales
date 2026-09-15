@@ -101,8 +101,14 @@
 
   function setModule(module) {
     const isTasks = module === "tasks";
-    $("salesApp").classList.toggle("hidden", isTasks);
+    const isPurchase = module === "purchase";
+
+    $("salesApp").classList.toggle("hidden", isTasks || isPurchase);
     $("taskApp").classList.toggle("hidden", !isTasks);
+    if ($("purchaseApp")) {
+      $("purchaseApp").classList.toggle("hidden", !isPurchase);
+    }
+
     $$(".module-tab").forEach(btn =>
       btn.classList.toggle("active", btn.dataset.module === module)
     );
@@ -113,6 +119,11 @@
       startPolling();
     } else {
       stopPolling();
+    }
+
+    if (window.KCEM_PURCHASE) {
+      if (isPurchase) window.KCEM_PURCHASE.activate();
+      else window.KCEM_PURCHASE.deactivate();
     }
   }
 

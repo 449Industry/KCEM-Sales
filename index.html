@@ -27,9 +27,15 @@
       <nav class="module-switch" aria-label="박물관 운영 메뉴">
         <button type="button" class="module-tab active" data-module="sales">매출</button>
         <button type="button" class="module-tab" data-module="tasks">업무공유</button>
+        <button type="button" class="module-tab" data-module="purchase">공동구매</button>
       </nav>
     </div>
     <div class="top-actions">
+      <nav class="site-links" aria-label="관련 사이트">
+        <a id="uwashSiteLink" href="https://449industry.github.io/UWash-Sales/" target="_blank" rel="noopener">UWASH</a>
+        <span>|</span>
+        <a href="https://449industry.github.io/OOZY-Sales/" target="_blank" rel="noopener">OOZY Sales</a>
+      </nav>
       <span id="statusBadge" class="status-badge">연결 준비</span>
       <button id="logoutBtn" class="top-btn hidden">이 기기 인증 해제</button>
     </div>
@@ -362,6 +368,183 @@
     </div>
   </main>
 
+  <main id="purchaseApp" class="shell purchase-shell hidden">
+    <section class="purchase-head panel">
+      <div class="purchase-head-left">
+        <div>
+          <span class="section-kicker">SHARED PURCHASE REQUEST</span>
+          <h2>공동 구매요청</h2>
+        </div>
+        <div class="purchase-site-legend">
+          <span class="site-chip kcem">KCEM</span>
+          <span class="site-chip oozy">OOZY</span>
+          <span class="site-chip uwash">UWASH</span>
+        </div>
+      </div>
+      <div class="purchase-head-actions">
+        <button id="purchaseManualToggle" class="task-outline-btn" type="button">수동입력</button>
+        <button id="purchaseRefreshBtn" class="task-mini-btn" type="button">새로고침</button>
+      </div>
+    </section>
+
+    <section class="purchase-quick panel">
+      <div class="purchase-quick-label">
+        <strong>빠른 요청</strong>
+        <span>자연어 한 줄 입력 후 Enter 또는 바로추가</span>
+      </div>
+      <div class="purchase-quick-row">
+        <input id="purchaseQuickInput" type="text"
+               placeholder="예: 1순위 흰색 PLA 필라멘트 2롤 45000원 급함" />
+        <button id="purchaseQuickAddBtn" class="task-add-btn" type="button">바로추가</button>
+      </div>
+      <div id="purchaseQuickPreview" class="purchase-quick-preview hidden"></div>
+      <div id="purchaseMessage" class="task-entry-message"></div>
+    </section>
+
+    <section id="purchaseManualPanel" class="purchase-manual panel hidden">
+      <div class="purchase-manual-grid">
+        <label class="task-field">
+          <span>요청일</span>
+          <input id="purchaseRequestDate" type="date" />
+        </label>
+
+        <div class="task-field">
+          <span>우선순위</span>
+          <div id="purchasePriorityButtons" class="purchase-priority-buttons">
+            <button type="button" data-priority="1">1</button>
+            <button type="button" data-priority="2">2</button>
+            <button type="button" data-priority="3" class="active">3</button>
+            <button type="button" data-priority="4">4</button>
+            <button type="button" data-priority="5">5</button>
+          </div>
+        </div>
+
+        <label class="task-field span-2">
+          <span>품목·요청내용</span>
+          <input id="purchaseContent" type="text" maxlength="300" />
+        </label>
+
+        <label class="task-field">
+          <span>수량</span>
+          <input id="purchaseQuantity" type="text" maxlength="60" placeholder="예: 2롤 / 10개" />
+        </label>
+
+        <label class="task-field">
+          <span>예상금액</span>
+          <input id="purchaseAmount" type="number" min="0" step="1" placeholder="원" />
+        </label>
+
+        <label class="task-field span-2">
+          <span>메모</span>
+          <input id="purchaseMemo" type="text" maxlength="500" />
+        </label>
+      </div>
+
+      <div class="purchase-manual-actions">
+        <button id="purchaseManualClearBtn" class="secondary-btn compact-action" type="button">초기화</button>
+        <button id="purchaseManualAddBtn" class="primary-btn compact" type="button">요청 등록</button>
+      </div>
+    </section>
+
+    <section class="purchase-list-panel panel">
+      <div class="purchase-tabs">
+        <button id="purchasePendingTab" class="purchase-tab active" data-status="pending" type="button">
+          진행중 <span id="purchasePendingCount">0</span>
+        </button>
+        <button id="purchaseCompletedTab" class="purchase-tab" data-status="completed" type="button">
+          구매완료 <span id="purchaseCompletedCount">0</span>
+        </button>
+      </div>
+
+      <div class="purchase-table-wrap">
+        <table class="purchase-table">
+          <thead>
+            <tr>
+              <th>출처</th>
+              <th>우선</th>
+              <th>요청일</th>
+              <th>품목·요청내용</th>
+              <th>수량</th>
+              <th class="right">예상금액</th>
+              <th>메모</th>
+              <th class="center">관리</th>
+            </tr>
+          </thead>
+          <tbody id="purchaseRows"></tbody>
+        </table>
+        <div id="purchaseEmpty" class="task-board-empty hidden">구매요청이 없습니다.</div>
+      </div>
+    </section>
+
+    <div class="foot-status">
+      <span id="purchaseLastUpdated">마지막 갱신: -</span>
+      <span>공용 DB · shared_purchase_requests</span>
+    </div>
+  </main>
+
+  <div id="purchaseEditOverlay" class="overlay hidden">
+    <form id="purchaseEditForm" class="edit-card purchase-edit-card">
+      <div class="edit-head">
+        <div>
+          <div class="pin-label left">KCEM PURCHASE EDIT</div>
+          <h1>구매요청 수정</h1>
+        </div>
+        <button id="purchaseEditClose" class="modal-close" type="button">×</button>
+      </div>
+
+      <input id="purchaseEditId" type="hidden" />
+
+      <div class="edit-grid">
+        <label class="field">
+          <span>요청일</span>
+          <input id="purchaseEditDate" type="date" required />
+        </label>
+
+        <div class="field">
+          <span>우선순위</span>
+          <div id="purchaseEditPriorityButtons" class="purchase-priority-buttons">
+            <button type="button" data-edit-priority="1">1</button>
+            <button type="button" data-edit-priority="2">2</button>
+            <button type="button" data-edit-priority="3">3</button>
+            <button type="button" data-edit-priority="4">4</button>
+            <button type="button" data-edit-priority="5">5</button>
+          </div>
+        </div>
+
+        <label class="field span-2">
+          <span>품목·요청내용</span>
+          <input id="purchaseEditContent" type="text" required />
+        </label>
+
+        <label class="field">
+          <span>수량</span>
+          <input id="purchaseEditQuantity" type="text" />
+        </label>
+
+        <label class="field">
+          <span>예상금액</span>
+          <input id="purchaseEditAmount" type="number" min="0" step="1" />
+        </label>
+
+        <label class="field span-2">
+          <span>메모</span>
+          <textarea id="purchaseEditMemo" rows="3"></textarea>
+        </label>
+      </div>
+
+      <div class="edit-actions">
+        <button id="purchaseDeleteBtn" class="danger-btn" type="button">삭제</button>
+        <div class="edit-actions-right">
+          <button id="purchaseEditCancel" class="secondary-btn" type="button">취소</button>
+          <button id="purchaseEditSave" class="primary-btn compact" type="submit">저장</button>
+        </div>
+      </div>
+
+      <div id="purchaseEditMessage" class="edit-message"></div>
+    </form>
+  </div>
+
+
   <div id="memberOverlay" class="overlay hidden">
     <div class="task-modal member-modal">
       <div class="task-modal-head">
@@ -563,6 +746,7 @@
   <script src="./config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./assets/app.js"></script>
+  <script src="./assets/purchase.js"></script>
   <script src="./assets/tasks.js"></script>
 </body>
 </html>

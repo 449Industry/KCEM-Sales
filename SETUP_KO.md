@@ -474,3 +474,94 @@ v1.6.0부터 아래 SQL을 한 번 실행해야 합니다.
 - started_at
 - approved_at
 - APPROVED 상태
+
+
+---
+
+# v1.7.0 — 공동 구매요청
+
+## 사용 DB
+새 테이블을 만들지 않습니다.
+
+기존 공용 테이블만 사용:
+`public.shared_purchase_requests`
+
+KCEM에서 신규 작성 시:
+`source_site = 'KCEM'`
+
+공동 목록:
+- UWASH
+- OOZY
+- KCEM
+모든 요청을 같이 표시합니다.
+
+## 소유권
+KCEM 화면에서:
+- KCEM 요청: 수정 / 삭제 가능
+- UWASH / OOZY 요청: 조회만 가능
+- 구매완료 / 완료취소: 모든 출처 요청에 가능
+
+## 상태
+- `pending` = 진행중
+- `completed` = 구매완료
+
+구매완료 목록은 회색으로 표시됩니다.
+
+## 우선순위
+- 1 ~ 5
+- 1이 가장 긴급
+- 진행중 목록은 우선순위 오름차순을 우선 적용
+
+## 입력
+### 빠른 요청
+자연어 한 줄 입력 후 Enter 또는 `바로추가`
+
+예:
+`1순위 흰색 PLA 필라멘트 2롤 45000원 급함`
+
+가능한 경우 자동 분리:
+- 우선순위
+- 품목·요청내용
+- 수량
+- 예상금액
+- 메모
+
+요청일은 오늘 날짜를 자동 사용합니다.
+
+### 수동입력
+- 요청일
+- 우선순위
+- 품목·요청내용
+- 수량
+- 예상금액
+- 메모
+
+`용도` 입력란은 없습니다.
+
+## 사이트 링크
+상단에는 현재 KCEM 링크를 중복 표시하지 않습니다.
+
+표시:
+`UWASH | OOZY Sales`
+
+OOZY Sales:
+https://449industry.github.io/OOZY-Sales/
+
+UWASH 링크는 현재 패키지에서:
+https://449industry.github.io/UWash-Sales/
+로 설정했습니다. 실제 운영 주소가 다르면 index.html의 UWASH href만 변경하면 됩니다.
+
+## DB 스키마 호환
+기존 UWash 공용 테이블을 수정하지 않기 위해
+웹에서 PostgREST OpenAPI 스키마를 읽어 실제 컬럼명을 우선 감지합니다.
+
+지원 후보:
+- id / request_id
+- request_date / requested_date
+- item_name / request_text / request_content
+- quantity / qty
+- expected_amount / estimated_amount
+- memo / note / comment
+- completed_at
+
+DB 생성 SQL이나 ALTER TABLE은 포함하지 않습니다.

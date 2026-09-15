@@ -2780,3 +2780,389 @@ tbody tr.selected-day-row td:first-child {
     display: none;
   }
 }
+
+
+/* ============================================================
+   v1.7.0 shared purchase requests
+   ============================================================ */
+
+.site-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 3px;
+  white-space: nowrap;
+}
+
+.site-links a {
+  color: #74645f;
+  font-size: 9px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.site-links a:hover {
+  color: var(--red-dark);
+  text-decoration: underline;
+}
+
+.site-links span {
+  color: #c4b9b5;
+  font-size: 9px;
+}
+
+.purchase-shell {
+  margin-top: 12px !important;
+}
+
+.purchase-head {
+  min-height: 60px;
+  margin-bottom: 9px;
+  padding: 8px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.purchase-head-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.purchase-head h2 {
+  margin: 2px 0 0;
+  font-size: 17px;
+}
+
+.purchase-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.purchase-site-legend {
+  display: flex;
+  gap: 4px;
+}
+
+.site-chip,
+.purchase-source-badge {
+  min-height: 24px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 950;
+}
+
+.site-chip.kcem { background: #B9443B; }
+.site-chip.oozy { background: #183F23; }
+.site-chip.uwash { background: #E1251B; }
+
+.purchase-source-badge {
+  min-width: 54px;
+  background: var(--site-color);
+}
+
+.purchase-quick {
+  margin-bottom: 9px;
+  padding: 10px 11px !important;
+}
+
+.purchase-quick-label {
+  margin-bottom: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.purchase-quick-label strong {
+  font-size: 12px;
+}
+
+.purchase-quick-label span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.purchase-quick-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 92px;
+  gap: 7px;
+}
+
+.purchase-quick-row input {
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  color: var(--brown);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.purchase-quick-row input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-soft);
+}
+
+.purchase-quick-preview {
+  margin-top: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.purchase-quick-preview span {
+  min-height: 25px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  color: #665651;
+  background: #f3eeec;
+  font-size: 8px;
+}
+
+.purchase-quick-preview em {
+  color: #9a8882;
+  font-style: normal;
+  font-size: 7px;
+}
+
+.purchase-manual {
+  margin-bottom: 9px;
+  padding: 11px !important;
+}
+
+.purchase-manual-grid {
+  display: grid;
+  grid-template-columns: 150px 200px 1fr 1fr;
+  gap: 0 9px;
+}
+
+.purchase-manual-grid .span-2 {
+  grid-column: span 2;
+}
+
+.purchase-manual-actions {
+  margin-top: 5px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.purchase-priority-buttons {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.purchase-priority-buttons button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: #75645f;
+  background: #fff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.purchase-priority-buttons button.active {
+  color: #fff;
+  border-color: var(--brown);
+  background: var(--brown);
+}
+
+.purchase-list-panel {
+  overflow: hidden;
+}
+
+.purchase-tabs {
+  min-height: 48px;
+  padding: 7px 9px;
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.purchase-tab {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 8px;
+  color: #74645f;
+  background: #f2ecea;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.purchase-tab.active {
+  color: #fff;
+  background: var(--brown);
+}
+
+.purchase-tab span {
+  margin-left: 4px;
+  opacity: .8;
+}
+
+.purchase-table-wrap {
+  overflow: auto;
+}
+
+.purchase-table {
+  width: 100%;
+  min-width: 1040px;
+  border-collapse: collapse;
+}
+
+.purchase-table th,
+.purchase-table td {
+  padding: 10px 11px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-size: 10px;
+  vertical-align: middle;
+}
+
+.purchase-table th:last-child,
+.purchase-table td:last-child {
+  border-right: 0;
+}
+
+.purchase-table thead th {
+  color: #75645f;
+  background: #f8f5f3;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.purchase-content-cell {
+  min-width: 270px;
+}
+
+.purchase-content-cell strong {
+  font-size: 11px;
+}
+
+.purchase-memo-cell {
+  min-width: 150px;
+  color: var(--muted);
+}
+
+.purchase-completed-row {
+  color: #8a817e;
+  background: #f1f0ef;
+}
+
+.purchase-completed-row strong {
+  color: #777;
+}
+
+.priority-badge {
+  width: 27px;
+  height: 27px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #81736e;
+  font-size: 9px;
+  font-weight: 950;
+}
+
+.priority-badge.p1 { background: #a51f1a; }
+.priority-badge.p2 { background: #c75a32; }
+.priority-badge.p3 { background: #8a6a49; }
+.priority-badge.p4 { background: #777; }
+.priority-badge.p5 { background: #aaa19e; }
+
+.purchase-row-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.purchase-row-btn {
+  min-height: 27px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: #6d5d58;
+  background: #fff;
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.purchase-row-btn.complete {
+  color: #fff;
+  border-color: #5d6d57;
+  background: #5d6d57;
+}
+
+.purchase-row-btn.danger-lite {
+  color: #9d312d;
+}
+
+.purchase-edit-card {
+  width: min(600px, 100%) !important;
+}
+
+@media (max-width: 900px) {
+  .site-links {
+    display: none;
+  }
+
+  .purchase-manual-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .purchase-manual-grid .span-2 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 620px) {
+  .purchase-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .purchase-head-left {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .purchase-head-actions {
+    width: 100%;
+  }
+
+  .purchase-head-actions button {
+    flex: 1;
+  }
+
+  .purchase-quick-row {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-manual-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-manual-grid .span-2 {
+    grid-column: span 1;
+  }
+}
