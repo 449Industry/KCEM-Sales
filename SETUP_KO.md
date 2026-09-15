@@ -620,3 +620,35 @@ RPC:
 - KCEM 요청만 내용 수정/삭제
 - UWASH/OOZY 요청은 내용 조회만
 - 구매완료/완료취소(status 변경)는 모든 출처 가능
+
+
+---
+
+# v1.7.3 — shared_purchase_requests PK 자동 감지
+
+오류:
+`shared_purchase_requests ID 컬럼을 찾을 수 없습니다.`
+
+원인:
+v1.7.2가 ID 컬럼 이름을 후보 목록으로 추측했습니다.
+
+v1.7.3:
+- ID 이름을 추측하지 않음
+- PostgreSQL `pg_index`에서 실제 Primary Key 컬럼을 직접 조회
+- PK가 없을 경우 identity 컬럼을 보조 탐색
+- 레거시 fallback으로 request_key / purchase_request_key 등만 마지막에 확인
+- 기존 RPC 함수가 모두 실제 PK를 사용하도록 교체
+
+DB 변경 범위:
+- 새 테이블 없음
+- shared_purchase_requests ALTER 없음
+- RLS 변경 없음
+- RPC 함수만 교체
+
+실행 SQL:
+`supabase/KCEM_SHARED_PURCHASE_PK_FIX_v1.7.3.sql`
+
+SQL 실행 결과 하단에:
+- detected_primary_key
+- shared_purchase_requests 전체 컬럼 목록
+이 표시됩니다.
