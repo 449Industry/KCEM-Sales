@@ -3061,6 +3061,18 @@ tbody tr.selected-day-row td:first-child {
   color: var(--muted);
 }
 
+.purchase-memo-link {
+  color: #a63d35;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.purchase-memo-link:hover {
+  color: #6f2823;
+}
+
 .purchase-completed-row {
   color: #8a817e;
   background: #f1f0ef;

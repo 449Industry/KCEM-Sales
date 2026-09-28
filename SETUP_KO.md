@@ -652,3 +652,31 @@ SQL 실행 결과 하단에:
 - detected_primary_key
 - shared_purchase_requests 전체 컬럼 목록
 이 표시됩니다.
+
+
+---
+
+# v1.7.4 — 공동구매 메모 URL 링크
+
+구매요청 목록의 `메모`에 URL이 포함되어 있으면 자동으로 클릭 가능한 링크로 표시합니다.
+
+지원 형식:
+- `https://...`
+- `http://...`
+- `www....`
+
+동작:
+- 링크 클릭 시 새 탭에서 열기
+- `target="_blank"`
+- `rel="noopener noreferrer"`
+- 일반 메모 텍스트는 그대로 표시
+- 한 메모 안의 여러 URL도 각각 링크 처리
+- 문장 끝의 `)`, `.`, `,`, `!`, `?` 등은 링크에서 자동 제외
+- 수정창에서는 기존과 동일하게 원본 메모 텍스트를 그대로 편집
+
+보안:
+- 메모 전체를 HTML로 직접 삽입하지 않습니다.
+- 일반 텍스트와 URL 모두 HTML escape 후 URL 부분만 `<a>`로 구성합니다.
+
+DB / Supabase SQL 변경은 없습니다.
+기존 `shared_purchase_requests.memo` 데이터를 그대로 사용합니다.

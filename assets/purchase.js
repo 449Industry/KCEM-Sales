@@ -94,6 +94,42 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
   }[ch]));
 
+  function linkifyMemo(value) {
+    const text = String(value ?? "");
+    if (!text) return "";
+
+    const urlRe = /(?:https?:\/\/|www\.)[^\s<>"']+/gi;
+    let html = "";
+    let last = 0;
+
+    for (const match of text.matchAll(urlRe)) {
+      const index = match.index ?? 0;
+      html += escapeHtml(text.slice(last, index));
+
+      let core = match[0];
+      let trailing = "";
+
+      // Sentence punctuation immediately after a URL should remain plain text.
+      while (core && /[),.!?;:\]}〉》」』]$/.test(core)) {
+        trailing = core.slice(-1) + trailing;
+        core = core.slice(0, -1);
+      }
+
+      if (!core) {
+        html += escapeHtml(match[0]);
+      } else {
+        const href = /^www\./i.test(core) ? `https://${core}` : core;
+        html += `<a class="purchase-memo-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(core)}</a>`;
+        html += escapeHtml(trailing);
+      }
+
+      last = index + match[0].length;
+    }
+
+    html += escapeHtml(text.slice(last));
+    return html;
+  }
+
   const won = value => {
     if (value == null || value === "") return "-";
     const n = Number(String(value).replace(/[^\d.-]/g, ""));
@@ -550,7 +586,7 @@
           <td class="purchase-content-cell"><strong>${escapeHtml(row.content || "-")}</strong></td>
           <td>${escapeHtml(row.quantity || "-")}</td>
           <td class="right">${won(row.amount)}</td>
-          <td class="purchase-memo-cell">${escapeHtml(row.memo || "")}</td>
+          <td class="purchase-memo-cell">${linkifyMemo(row.memo || "")}</td>
           <td class="center">${actionButtons(row)}</td>
         </tr>
       `;
